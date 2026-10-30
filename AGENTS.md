@@ -68,6 +68,7 @@ account_web/
 │   ├── constants/categoryIcons.ts # 每個分類一個專屬 Lucide 圖示（禁止用 emoji 當圖示）
 │   ├── constants/navigation.ts # 頁面清單 NAV_ITEMS / AppTab（側欄與底部導覽唯一來源）
 │   ├── hooks/useNow.ts        # 每分鐘更新的現在時間（相對時間顯示用）
+│   ├── hooks/useToday.ts      # 今天日期；跨日（含跨月）時才觸發重繪，讓「本月」跟著日曆走
 │   ├── theme/tokens.ts       # 設計 Token（顏色唯一來源，Tailwind 與 Recharts 共用）
 │   ├── types/finance.ts       # TypeScript 介面 (Transaction, MonthlySummary, FilterState)
 │   ├── utils/
@@ -78,7 +79,7 @@ account_web/
 │   │   ├── demoData.ts        # 內建擬真 Demo 資料 (保護真實隱私)
 │   │   ├── storage.ts         # LocalStorage 讀寫與快取版本遷移 (CACHE_VERSION)
 │   │   └── __tests__/         # Vitest 回歸測試（地雷 1、2、5 都有覆蓋，TZ 固定 Asia/Taipei）
-│   ├── App.tsx                # 狀態管理：先顯示快取、背景同步 GAS（applyCloudData）
+│   ├── App.tsx                # 狀態管理：先顯示快取、背景同步 GAS（syncFromCloud）、切回前景且資料超過 5 分鐘自動同步、隱私模式
 │   ├── main.tsx               # React 根渲染節點 + PWA Service Worker 註冊
 │   └── index.css              # 全域樣式、字體與 Fintech 自訂 Utility
 ```
@@ -121,6 +122,7 @@ account_web/
 - 「月度彙總」工作表不再由程式累加；前端月總額一律從明細計算（`calculateDynamicMonthlySummaries`）。
 - 「不固定大額支出」分頁（標題列含「項目」「金額」，可選「日期」）由 `readIrregular` 讀取，doGet v2 回傳 `irregular`。**刻意不計入任何每月總額、平均或圖表**，只在每月花費分析頁的獨立卡片顯示。
 - LINE 端：`ALLOWED_USER_IDS` 指令碼屬性為白名單（留空不限制）；「我的ID」查 userId、「撤銷」刪除上一批 LINE 寫入（會先比對內容）。寫入一律包在 `LockService` 內。
+- **Webhook 金鑰**：GAS 讀不到 `X-Line-Signature`，無法驗簽。指令碼屬性 `LINE_WEBHOOK_KEY` 設定後，`doPost` 只接受網址帶 `?key=<值>` 的請求（LINE 後台 Webhook URL 要同步加上）。留空不檢查。用 `setupWebhookKey()` 產生；**設定屬性與改 LINE 網址要一起做**，否則 LINE 訊息會被靜默忽略。
 - LINE 解析分兩層：`parseSimpleRecords` 先以規則處理「項目 金額」（分類靠 `CATEGORY_KEYWORDS`），只要有日期詞、運算或認不出分類就回傳 null 交給 Gemini。新增常用店家請加到 `CATEGORY_KEYWORDS`。
 - 線上只維護一個部署「Claude最新版」（`AKfycbyCVO01…`），LINE Webhook 與前端都連它；其他舊部署未封存但已不使用。
 - **GAS 一律用 clasp 部署**：改完 `gas/Code.gs` 執行 `npm run gas:deploy -- 說明`，會推送 `gas/`、建立新版本並把「Claude最新版」部署指向它（網址不變）。不要再手動貼到網頁編輯器，也不要在編輯器另外部署，以免 repo 與線上不一致。
@@ -136,7 +138,9 @@ account_web/
 - **預算**：來自試算表「預算設定」分頁（doGet v2 的 `budgets`），未設定的類別以半年均值比例當「參考」值（`resolveCategoryBudgets`）。
 - **手機首屏**：`MonthOverviewCard`（本月已花 / 預算剩餘 / 最近 5 筆），僅在 `< sm` 顯示。
 - **導覽**：手機與平板用底部導覽列（`BottomNav`），桌機用側欄；新增頁面只改 `constants/navigation.ts`。月曆熱圖用 `heatScale`，深色卡片上的類別色用 `categoryColorsOnDark`。
-- **數字規範**：所有金額數值必須強制加上 **`tabular-nums`**（避免跳動對齊）與 **`tracking-tight`**。
+- **數字規範**：所有金額數值必須強制加上 **`tabular-nums`**（避免跳動對齊）與 **`tracking-tight`**。隱私模式（頂部眼睛按鈕）靠 `.privacy-mode .tabular-nums` 模糊金額，所以 `tabular-nums` 只包住金額本身、別包住整句標籤；新增金額沒加這個 class 就會在隱私模式露出。
+- **分析月份**：月份選單可選「全部月份」（`selectedMonth = ''`）。只能看單月的元件（首屏、KPI、累計走勢、預算）一律收 App 的 `focusMonth`（選定月份，否則最新月份）；明細與分類圓餅才吃 `''`。月份清單用 `buildAvailableMonths`，有資料時一定包含本月。
+- **字型**：只從 Google Fonts 載 Plus Jakarta Sans（英數）；中文走系統字（`tailwind.config.ts` 的 `fontFamily.sans`）。不要再加 Noto Sans TC 等 CJK 網路字型（CSS 136KB、阻塞首屏）。
 
 ---
 

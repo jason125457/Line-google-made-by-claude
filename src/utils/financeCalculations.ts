@@ -20,6 +20,31 @@ export function getPreviousMonth(month: string): string {
 }
 
 /**
+ * Months that have data, newest first. The current month is always included once there is any
+ * data, so the dashboard opens on "this month" (spent 0 so far) instead of last month on day 1.
+ */
+export function buildAvailableMonths(
+  transactions: Transaction[],
+  summaries: MonthlySummary[] = [],
+  currentMonth: string = getCurrentMonthString()
+): string[] {
+  const months = new Set<string>();
+  transactions.forEach(t => /^\d{4}-\d{2}$/.test(t.month) && months.add(t.month));
+  summaries.forEach(s => /^\d{4}-\d{2}$/.test(s.month) && months.add(s.month));
+  if (months.size > 0 && /^\d{4}-\d{2}$/.test(currentMonth)) months.add(currentMonth);
+  return Array.from(months).sort((a, b) => b.localeCompare(a));
+}
+
+/**
+ * A monthly average scaled to the share of the month that has passed, so an unfinished month is
+ * compared like-for-like instead of always looking far below a full-month average.
+ */
+export function averageToDate(monthlyAvg: number, elapsedDays: number, daysInMonth: number): number {
+  if (daysInMonth <= 0) return monthlyAvg;
+  return Math.round((monthlyAvg * Math.min(elapsedDays, daysInMonth)) / daysInMonth);
+}
+
+/**
  * Sum of a month's transactions dated on or before `day` (1-based).
  * Used for like-for-like comparison against an in-progress month.
  */

@@ -61,7 +61,7 @@ const ChartTooltip: React.FC<TooltipProps<number, string> & { month: string }> =
     <div className="bg-surface border border-line rounded-xl shadow-lg px-3 py-2.5 text-xs space-y-1.5 min-w-[160px]">
       <p className="font-bold text-ink">
         {parseInt(month.slice(5), 10)}/{p.day}
-        {p.daily !== null && <span className="ml-2 font-semibold text-ink-muted">當日 {fmt(p.daily)}</span>}
+        {p.daily !== null && <span className="ml-2 font-semibold text-ink-muted">當日 <span className="tabular-nums">{fmt(p.daily)}</span></span>}
       </p>
       {rows.map(([label, color, value]) =>
         value === null ? null : (
@@ -108,10 +108,10 @@ export const MonthCumulativeChart: React.FC<MonthCumulativeChartProps> = ({
   const vsLastMonth = latest && latest.lastMonth ? latest.cumulative! - latest.lastMonth : null;
   const vsPace = latest ? latest.cumulative! - latest.pace : 0;
   const paceStatus = vsPace <= 0
-    ? { text: `低於預算進度 ${fmt(-vsPace)}`, Icon: CheckCircle2, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200/60' }
+    ? { text: '低於預算進度', Icon: CheckCircle2, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200/60' }
     : latest && latest.pace > 0 && vsPace / latest.pace > SERIOUS_OVER_PACE
-      ? { text: `超前預算進度 ${fmt(vsPace)}`, Icon: AlertTriangle, tone: 'bg-rose-50 text-rose-700 border-rose-200/60' }
-      : { text: `超前預算進度 ${fmt(vsPace)}`, Icon: AlertTriangle, tone: 'bg-amber-50 text-amber-800 border-amber-200/60' };
+      ? { text: '超前預算進度', Icon: AlertTriangle, tone: 'bg-rose-50 text-rose-700 border-rose-200/60' }
+      : { text: '超前預算進度', Icon: AlertTriangle, tone: 'bg-amber-50 text-amber-800 border-amber-200/60' };
   const projectionEnd = series[series.length - 1].projection;
   const lastDayLabel = latest ? `${parseInt(selectedMonth.slice(5), 10)}/${latest.day}` : '';
   const ticks = [1, 5, 10, 15, 20, 25, series.length];
@@ -139,12 +139,12 @@ export const MonthCumulativeChart: React.FC<MonthCumulativeChartProps> = ({
                 }`}
               >
                 {vsLastMonth > 0 ? <TrendingUp className="w-3 h-3" aria-hidden="true" /> : <TrendingDown className="w-3 h-3" aria-hidden="true" />}
-                比上月同期{vsLastMonth > 0 ? '多' : '少'} {fmt(Math.abs(vsLastMonth))}
+                比上月同期{vsLastMonth > 0 ? '多' : '少'} <span className="tabular-nums">{fmt(Math.abs(vsLastMonth))}</span>
               </span>
             )}
             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border ${paceStatus.tone}`}>
               <paceStatus.Icon className="w-3 h-3" aria-hidden="true" />
-              {paceStatus.text}
+              {paceStatus.text} <span className="tabular-nums">{fmt(Math.abs(vsPace))}</span>
             </span>
           </div>
         )}
@@ -269,12 +269,12 @@ export const MonthCumulativeChart: React.FC<MonthCumulativeChartProps> = ({
             </span>
             <span className="flex items-center gap-1.5">
               <LegendSwatch color={SERIES.pace.color} dash="2 3" />
-              {SERIES.pace.label}（{budget.isCustom ? '預算' : '參考預算'} {fmt(budget.amount)}）
+              {SERIES.pace.label}（{budget.isCustom ? '預算' : '參考預算'} <span className="tabular-nums">{fmt(budget.amount)}</span>）
             </span>
             {projectionEnd !== null && (
               <span className="flex items-center gap-1.5">
                 <LegendSwatch color={SERIES.projection.color} dash="3 3" />
-                {SERIES.projection.label} {fmt(projectionEnd)}
+                {SERIES.projection.label} <span className="tabular-nums">{fmt(projectionEnd)}</span>
               </span>
             )}
           </div>

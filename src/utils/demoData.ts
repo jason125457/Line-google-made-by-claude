@@ -6,7 +6,7 @@ import { normalizeCategory } from '../constants/categories';
 // Replace these with your own by connecting Google Sheets.
 
 const RAW_DEMO: { date: string; item: string; category: string; amount: number }[] = [
-  // 2026-09 (Current Month)
+  // 2026-09 (anchor month: shifted onto the current month at load, see shiftDemoDates)
   { date: '2026-09-04', item: '晚餐牛肉麵', category: '生活', amount: 160 },
   { date: '2026-09-04', item: '超商咖啡', category: '生活', amount: 55 },
   { date: '2026-09-03', item: '全聯日用品', category: '家用', amount: 320 },
@@ -77,7 +77,36 @@ const RAW_DEMO: { date: string; item: string; category: string; amount: number }
   { date: '2026-03-05', item: '水費', category: '家用', amount: 300 },
 ];
 
-export const DEMO_TRANSACTIONS: Transaction[] = RAW_DEMO.map((r, i) => ({
+// The newest month in RAW_DEMO; it is moved onto the current month at load time.
+const DEMO_ANCHOR_MONTH = '2026-09';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * Moves demo dates so the anchor month lands on today's month (keeping day-of-month, clamped to
+ * the target month's length) and drops anything that would fall after today. Demo mode then
+ * always shows an in-progress current month instead of going stale.
+ */
+export function shiftDemoDates<T extends { date: string }>(
+  rows: T[],
+  anchorMonth: string,
+  today: Date = new Date()
+): T[] {
+  const [ay, am] = anchorMonth.split('-').map(Number);
+  const offset = (today.getFullYear() * 12 + today.getMonth()) - (ay * 12 + am - 1);
+  const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  return rows
+    .map(r => {
+      const [y, m, d] = r.date.slice(0, 10).split('-').map(Number);
+      const target = new Date(y, m - 1 + offset, 1);
+      const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+      const date = `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(Math.min(d, lastDay))}`;
+      return { ...r, date };
+    })
+    .filter(r => r.date <= todayStr);
+}
+
+export const DEMO_TRANSACTIONS: Transaction[] = shiftDemoDates(RAW_DEMO, DEMO_ANCHOR_MONTH).map((r, i) => ({
   id: `demo-${i}`,
   date: r.date,
   item: r.item,

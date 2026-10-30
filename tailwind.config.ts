@@ -8,6 +8,21 @@ export default {
   ],
   theme: {
     extend: {
+      // Latin from Plus Jakarta Sans (web font); Chinese falls through to each platform's own
+      // Traditional Chinese UI font, so no CJK web font has to be downloaded.
+      fontFamily: {
+        sans: [
+          '"Plus Jakarta Sans"',
+          '"PingFang TC"',          // iOS / macOS
+          '"Noto Sans TC"',         // installed locally (desktop)
+          '"Noto Sans CJK TC"',     // Android / Linux
+          '"Microsoft JhengHei UI"', // Windows
+          '"Microsoft JhengHei"',
+          'system-ui',
+          '-apple-system',
+          'sans-serif',
+        ],
+      },
       // Semantic tokens from src/theme/tokens.ts — use these instead of raw hex values.
       colors: {
         canvas: p.canvas,

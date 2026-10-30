@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, RefreshCw, Coffee, Sun, Moon } from 'lucide-react';
+import { Calendar, RefreshCw, Coffee, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import { DataSource } from '../types/finance';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { useNow } from '../hooks/useNow';
@@ -17,6 +17,8 @@ interface TopGreetingBarProps {
   lastSyncAt?: string;
   lastSyncTime?: string;
   syncError: string | null;
+  hideAmounts: boolean;
+  onToggleHideAmounts: () => void;
 }
 
 export const TopGreetingBar: React.FC<TopGreetingBarProps> = ({
@@ -30,6 +32,8 @@ export const TopGreetingBar: React.FC<TopGreetingBarProps> = ({
   lastSyncAt,
   lastSyncTime,
   syncError,
+  hideAmounts,
+  onToggleHideAmounts,
 }) => {
   const now = useNow();
 
@@ -100,6 +104,19 @@ export const TopGreetingBar: React.FC<TopGreetingBarProps> = ({
             </span>
           </div>
         </div>}
+
+        {/* Privacy mode: blurs every amount on every page (remembered on this device) */}
+        <button
+          onClick={onToggleHideAmounts}
+          aria-pressed={hideAmounts}
+          className={`min-h-11 min-w-11 px-3 rounded-2xl border shadow-sm transition-colors flex items-center justify-center shrink-0 ${
+            hideAmounts ? 'bg-night border-night text-white' : 'bg-white border-line hover:bg-slate-50 text-slate-500'
+          }`}
+          title={hideAmounts ? '顯示金額' : '隱藏金額'}
+          aria-label="隱藏所有金額"
+        >
+          {hideAmounts ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
+        </button>
 
         {/* Sync button */}
         <button

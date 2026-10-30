@@ -62,7 +62,7 @@ const DeltaPill: React.FC<{ pct: number | null; suffix?: string }> = ({ pct, suf
   );
 };
 
-const StatTile: React.FC<{ label: string; value: string; hint?: string }> = ({ label, value, hint }) => (
+const StatTile: React.FC<{ label: string; value: string; hint?: React.ReactNode }> = ({ label, value, hint }) => (
   <div className="fintech-card p-3.5 sm:p-4 min-w-0">
     <p className="text-[11px] font-bold text-ink-muted">{label}</p>
     <p className="mt-1 text-lg sm:text-2xl font-extrabold text-ink tracking-tight tabular-nums truncate">{value}</p>
@@ -154,7 +154,7 @@ const IrregularExpensesCard: React.FC<{ items: IrregularExpense[]; monthlyAvg: n
               <p className="text-xs text-amber-900 font-medium">
                 約等於 <span className="font-extrabold tabular-nums">{monthsEquivalent.toFixed(1)}</span> 個月的日常花費
               </p>
-              <p className="text-[10px] text-amber-800/80 mt-0.5">以月平均 {fmt(monthlyAvg)} 換算</p>
+              <p className="text-[10px] text-amber-800/80 mt-0.5">以月平均 <span className="tabular-nums">{fmt(monthlyAvg)}</span> 換算</p>
             </div>
           )}
         </div>
@@ -406,7 +406,7 @@ export const MonthlyBreakdownPage: React.FC<MonthlyBreakdownPageProps> = ({ tran
               value={fmt(yearSummary.total)}
               hint={yearChange !== null ? `比 ${Number(yearSummary.year) - 1} 年${yearChange >= 0 ? '多' : '少'} ${Math.abs(yearChange)}%` : '日常 + 不固定大額'}
             />
-            <StatTile label="日常支出" value={fmt(yearSummary.regular)} hint={`月平均 ${fmt(yearSummary.monthlyAvg)}`} />
+            <StatTile label="日常支出" value={fmt(yearSummary.regular)} hint={<>月平均 <span className="tabular-nums">{fmt(yearSummary.monthlyAvg)}</span></>} />
             <StatTile label="不固定大額" value={fmt(yearSummary.irregular)} hint={`${yearIrregular.length} 筆`} />
             {yearSummary.projected !== null ? (
               <StatTile label="年底推估" value={fmt(yearSummary.projected)} hint="其餘月份以月平均估算" />

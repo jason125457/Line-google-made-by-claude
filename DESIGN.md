@@ -47,7 +47,9 @@ On `< sm` the dashboard opens with `MonthOverviewCard`: spent this month, budget
 (with daily allowance for the current month), and the five most recent records.
 
 ### 2.3 Typography
-- **Primary Font**: `Plus Jakarta Sans`, `Inter`, system-ui
+- **Primary Font**: `Plus Jakarta Sans` (Latin and digits, the only web font) → system Traditional Chinese UI font:
+  `PingFang TC` (Apple) · `Noto Sans TC` / `Noto Sans CJK TC` (local / Android) · `Microsoft JhengHei UI` (Windows).
+  Defined once as Tailwind `fontFamily.sans`; no CJK web font is downloaded.
 - **Number Treatment**: `tabular-nums` (`font-variant-numeric: tabular-nums`) for jitter-free alignment.
 - **Tracking**:
   - Display Numbers: `-0.03em` (`tracking-tight`)

@@ -1,4 +1,4 @@
-# 開發交接紀錄（2026-10-06 ～ 2026-10-10）
+# 開發交接紀錄（2026-10-06 ～ 2026-10-30）
 
 > 給下一個對話 / 下一位 AI Agent：先讀 `AGENTS.md`（架構與地雷），再讀本檔（目前進度、已做決定、待辦）。
 
@@ -9,7 +9,7 @@
 | 前端 | `main` 最新 commit 已由 Cloudflare Pages 自動上線（網站：money.shuns.site） |
 | GAS 後端 | 線上「Claude最新版」部署 = **第 56 版**，內容與 `gas/Code.gs` 一致（clasp 推送） |
 | LINE Webhook / 前端 | 都連「Claude最新版」同一個部署網址；改 GAS 後網址不變 |
-| 測試 | `npm test` 51 個全過；`npm run build` 通過 |
+| 測試 | `npm test` 58 個全過；`npm run build` 通過 |
 | 舊部署 | 約 30 個舊部署**未封存**（使用者決定不處理，不影響運作） |
 
 部署方式（已設定好 clasp，憑證在使用者電腦）：
@@ -41,6 +41,16 @@ npm run gas:deploy -- 這次改了什麼   # 推送 gas/ → 建立新版本 →
 - **底部導覽列**（手機／平板）取代漢堡選單；側欄與底部導覽共用 `constants/navigation.ts`
 - 移除死碼、手動補登功能、papaparse；新增 Vitest 測試；補 MIT `LICENSE`
 
+### 2026-10-30 優化盤點・第一批
+- 「全部月份」時首屏顯示 NT$0 的 bug：單月元件改吃 App 的 `focusMonth`
+- 月份清單一定含本月（`buildAvailableMonths`）；`useToday` 讓跨日/跨月時自動換到新月份
+- KPI 卡第一張的假折線換成真實「本月 vs 上月」累計走勢；半年均線卡進行中月份改比「均線同期」（`averageToDate`）
+- 隱私模式：頂部眼睛按鈕，全站金額模糊、記在這台裝置（`.privacy-mode .tabular-nums`）
+- Demo 資料日期隨今天移動（`shiftDemoDates`），Demo 提示文字不再寫「左側」
+- 字型：拿掉 Google Fonts 的 Noto Sans TC（136KB 阻塞 CSS），中文改系統字
+- 切回前景（或重新連網）且資料超過 5 分鐘就自動同步
+- GAS：`LINE_WEBHOOK_KEY` Webhook 秘密參數（`setupWebhookKey()`），未設定時不檢查
+
 ### 試算表（使用者的「記帳」）
 - 「不固定大額支出」分頁新增 C 欄「日期」，7 筆暫填 **2026/1/1（預設值，待使用者改成實際日期）**
 - 「預算設定」分頁已由 `setupBudgetSheet` 建立
@@ -55,6 +65,17 @@ npm run gas:deploy -- 這次改了什麼   # 推送 gas/ → 建立新版本 →
 ## 4. 可以接著做的（使用者尚未決定）
 
 設計示意圖畫布（私人連結，使用者可開）：https://claude.ai/artifact/5cgpxd4YpfKGzoDUT9xB18
+
+優化盤點（2026-10-30）第二批，使用者已同意方向、尚未實作：
+
+| 項目 | 備註 |
+|---|---|
+| 首頁主數字改「本月還可以花」＋每天可花 | 純前端（與下表 A 同一件事） |
+| 預算進度條加「今天應到的位置」刻度 | 純前端 |
+| 移除死碼：Sidebar 手機抽屜、`.live-beacon`、未用的 `clsx` / `tailwind-merge`、GAS v1 與月度彙總相關、`.serena/` | |
+| 類別顏色統一用 `tokens.ts`（TransactionList / BudgetProgressPanel 各有一份 Tailwind 色） | |
+| Recharts（588KB）延後載入；Service Worker 清舊快取；GAS doGet 加 CacheService | 效能 |
+| 靜態「理財思維」金句卡換成真洞察；明細點開可跳到試算表那一列；搜尋自動跨月 | 功能 |
 
 | 優先 | 項目 | 備註 |
 |---|---|---|

@@ -11,6 +11,7 @@
  * 5. 【快取去重】CacheService 6 小時內防止 LINE 重送導致重複記帳
  * 6. 【寫入鎖】LockService 避免多則訊息同時寫入互相覆蓋
  * 7. 【Gemini 備援鏈】gemini-3.5-flash-lite -> 3.1-flash-lite -> 2.5-flash，各自使用對應的 thinking 參數
+ * 8. 【Webhook 金鑰】設定 LINE_WEBHOOK_KEY 後，只接受網址帶 ?key= 的請求（執行 setupWebhookKey 產生）
  *
  * 「月度彙總」工作表不再由程式累加（手動改明細時會失準）。前端直接從明細計算月總額；
  * 若想在試算表內看彙總，可執行一次 setupMonthlySummaryFormula() 改成自動公式。
@@ -34,7 +35,11 @@ const CONFIG = {
   API_SECRET_TOKEN: getSecret('API_SECRET_TOKEN', ''),
 
   // 允許記帳的 LINE userId（逗號分隔）。留空 = 不限制。先傳「我的ID」給 Bot 取得自己的 userId。
-  ALLOWED_USER_IDS: getSecret('ALLOWED_USER_IDS', '')
+  ALLOWED_USER_IDS: getSecret('ALLOWED_USER_IDS', ''),
+
+  // Webhook 網址的秘密參數（LINE 後台填 .../exec?key=這個值）。GAS 讀不到 X-Line-Signature 標頭、
+  // 無法驗簽，改用這個擋掉知道網址的偽造請求。留空 = 不檢查。執行 setupWebhookKey() 產生。
+  LINE_WEBHOOK_KEY: getSecret('LINE_WEBHOOK_KEY', '')
 };
 
 const TIMEZONE = 'Asia/Taipei';
@@ -100,6 +105,12 @@ function isAllowedUser(userId) {
 function doPost(e) {
   if (!e || !e.postData) {
     return ContentService.createTextOutput("錯誤：請勿在 GAS 編輯器直接點擊執行 doPost。");
+  }
+
+  // 【Webhook 金鑰】設定後，網址沒帶正確 ?key= 的請求一律忽略（仍回 OK，不透露原因）
+  if (CONFIG.LINE_WEBHOOK_KEY && ((e.parameter && e.parameter.key) || '') !== CONFIG.LINE_WEBHOOK_KEY) {
+    Logger.log('⛔ Webhook 金鑰不符，忽略請求');
+    return ContentService.createTextOutput("OK");
   }
 
   try {
@@ -736,6 +747,25 @@ function setupBudgetSheet() {
   sheet.getRange(2, 2, VALID_CATEGORIES.length, 1).setNumberFormat('#,##0');
   sheet.getRange(rows.length + 2, 1).setValue('↑ 直接修改 B 欄金額即可，前端下次同步就會套用。留空或 0 代表該類別不設預算。');
   Logger.log(`✅ 已建立「預算設定」，預填依據：${months.join(', ') || '無歷史資料'}`);
+}
+
+/**
+ * 【手動執行一次】產生 LINE Webhook 金鑰並存進指令碼屬性 LINE_WEBHOOK_KEY。
+ * 執行後「立刻生效」：請馬上到 LINE Developers → Messaging API → Webhook URL，
+ * 在原網址後面加上 ?key=<記錄裡的金鑰> 並儲存，否則 LINE 訊息會被忽略。
+ * 已有金鑰時不會換新（要換請先刪除該屬性再執行）。
+ */
+function setupWebhookKey() {
+  const props = PropertiesService.getScriptProperties();
+  let key = props.getProperty('LINE_WEBHOOK_KEY');
+  if (!key) {
+    key = Utilities.getUuid().replace(/-/g, '');
+    props.setProperty('LINE_WEBHOOK_KEY', key);
+    Logger.log('✅ 已建立 LINE_WEBHOOK_KEY');
+  } else {
+    Logger.log('ℹ️ 已有 LINE_WEBHOOK_KEY，沿用原值');
+  }
+  Logger.log(`請把 LINE Webhook URL 改成：https://script.google.com/macros/s/<部署 ID>/exec?key=${key}`);
 }
 
 function summarize(records) {

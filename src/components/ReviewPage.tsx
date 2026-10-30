@@ -92,8 +92,8 @@ export const ReviewPage: React.FC<ReviewPageProps> = ({ transactions, monthlySum
             >
               {diff <= 0 ? <TrendingDown className="w-3.5 h-3.5" aria-hidden="true" /> : <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" />}
               {diff <= 0
-                ? `比${baseLabel}少 ${Math.abs(pct)}%，省下 ${fmt(-diff)}`
-                : `比${baseLabel}多 ${pct}%（多花 ${fmt(diff)}）`}
+                ? <>比{baseLabel}少 {Math.abs(pct)}%，省下 <span className="tabular-nums">{fmt(-diff)}</span></>
+                : <>比{baseLabel}多 {pct}%（多花 <span className="tabular-nums">{fmt(diff)}</span>）</>}
             </p>
           )}
 

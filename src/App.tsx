@@ -16,15 +16,23 @@ import { SyncModal } from './components/SyncModal';
 import { Transaction, MonthlySummary, GasConfig, FilterState, DataSource, CategoryBudgets, IrregularExpense } from './types/finance';
 import { fetchFromGas, normalizeMonthString } from './utils/gasApi';
 import { DEMO_TRANSACTIONS, DEMO_SUMMARIES, DEMO_IRREGULAR } from './utils/demoData';
-import { calculateDynamicMonthlySummaries, getCurrentMonthString } from './utils/financeCalculations';
+import { buildAvailableMonths, calculateDynamicMonthlySummaries, getCurrentMonthString } from './utils/financeCalculations';
 import { compareTransactionDates } from './utils/dateUtils';
 import {
   getGasConfig,
   saveGasConfig,
   saveCachedData,
-  getCachedData
+  getCachedData,
+  getHideAmounts,
+  saveHideAmounts
 } from './utils/storage';
+import { useToday } from './hooks/useToday';
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+
+// Returning to the app (tab or installed PWA) refreshes data once it is at least this old.
+const AUTO_SYNC_AFTER_MS = 5 * 60 * 1000;
+
+type SyncResult = { ok: true; time: string } | { ok: false; message: string };
 
 const MonthlyBreakdownPage = lazy(() =>
   import('./components/MonthlyBreakdownPage').then(m => ({ default: m.MonthlyBreakdownPage }))
@@ -41,6 +49,24 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'warn' | 'error'; text: string } | null>(null);
+  const [hideAmounts, setHideAmounts] = useState(getHideAmounts);
+  const toggleHideAmounts = () => {
+    setHideAmounts(prev => {
+      saveHideAmounts(!prev);
+      return !prev;
+    });
+  };
+
+  // Latest config for event handlers registered once (auto-sync on return).
+  const gasConfigRef = useRef(gasConfig);
+  useEffect(() => {
+    gasConfigRef.current = gasConfig;
+  }, [gasConfig]);
+  const isSyncingRef = useRef(false);
+
+  // Re-renders the app when the date changes, so "this month" follows the calendar.
+  const today = useToday();
+  const currentMonth = today.slice(0, 7);
 
   // Tab navigation
   const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
@@ -88,10 +114,7 @@ export const App: React.FC = () => {
   };
 
   const selectDefaultMonth = (details: Transaction[], summaries: MonthlySummary[]) => {
-    const months = new Set<string>();
-    details.forEach(item => item.month && months.add(item.month));
-    summaries.forEach(item => item.month && months.add(item.month));
-    const sortedMonths = Array.from(months).sort((a, b) => b.localeCompare(a));
+    const sortedMonths = buildAvailableMonths(details, summaries, getCurrentMonthString());
     if (sortedMonths.length === 0) return;
     setFilters(prev => {
       if (sortedMonths.includes(prev.selectedMonth)) return prev;
@@ -137,6 +160,28 @@ export const App: React.FC = () => {
     return nowStr;
   };
 
+  // Fetches from GAS and applies a successful response. Callers decide how to report failures.
+  const syncFromCloud = async (config: GasConfig): Promise<SyncResult> => {
+    isSyncingRef.current = true;
+    setIsSyncing(true);
+    try {
+      const res = await fetchFromGas(config.webAppUrl, config.secretToken);
+      if (res.success && res.details && res.summary) {
+        return { ok: true, time: applyCloudData(res.details, res.summary, res.budgets ?? {}, res.irregular ?? [], config) };
+      }
+      return { ok: false, message: res.message || '' };
+    } finally {
+      isSyncingRef.current = false;
+      setIsSyncing(false);
+    }
+  };
+
+  // A failed sync keeps showing cached data when there is any; demo/error stay in the error state.
+  const markSyncFailed = (message: string) => {
+    setSyncError(message);
+    setDataSource(prev => (prev === 'demo' || prev === 'error' ? 'error' : 'cache'));
+  };
+
   // Initial load: render cached data immediately, then refresh from GAS in the background.
   useEffect(() => {
     const initData = async () => {
@@ -169,24 +214,38 @@ export const App: React.FC = () => {
         return;
       }
 
-      setIsSyncing(true);
-      const res = await fetchFromGas(savedConfig.webAppUrl, savedConfig.secretToken);
-      setIsSyncing(false);
-
-      if (res.success && res.details && res.summary) {
-        applyCloudData(res.details, res.summary, res.budgets ?? {}, res.irregular ?? [], savedConfig);
-      } else {
-        const message = res.message || '無法連線 Google 試算表。';
+      const result = await syncFromCloud(savedConfig);
+      if (!result.ok) {
         if (!hasCache) {
           loadDemoData();
           setDataSource('error');
         }
-        setSyncError(message);
+        setSyncError(result.message || '無法連線 Google 試算表。');
       }
       setIsLoading(false);
     };
 
     initData();
+  }, []);
+
+  // Coming back to the app (switching tabs, reopening the installed PWA, reconnecting) refreshes
+  // stale data quietly; failures only show the cached-data banner, not a toast.
+  useEffect(() => {
+    const syncIfStale = async () => {
+      if (document.visibilityState !== 'visible' || isSyncingRef.current) return;
+      const config = gasConfigRef.current;
+      if (!config.webAppUrl) return;
+      const lastSync = config.lastSyncAt ? new Date(config.lastSyncAt).getTime() : 0;
+      if (Date.now() - lastSync < AUTO_SYNC_AFTER_MS) return;
+      const result = await syncFromCloud(config);
+      if (!result.ok) markSyncFailed(result.message || '無法連線 Google 試算表。');
+    };
+    document.addEventListener('visibilitychange', syncIfStale);
+    window.addEventListener('online', syncIfStale);
+    return () => {
+      document.removeEventListener('visibilitychange', syncIfStale);
+      window.removeEventListener('online', syncIfStale);
+    };
   }, []);
 
   // Handle Manual Refresh / Sync
@@ -196,35 +255,25 @@ export const App: React.FC = () => {
       return;
     }
 
-    setIsSyncing(true);
-    const res = await fetchFromGas(gasConfig.webAppUrl, gasConfig.secretToken);
-    setIsSyncing(false);
-
-    if (res.success && res.details && res.summary) {
-      const nowStr = applyCloudData(res.details, res.summary, res.budgets ?? {}, res.irregular ?? [], gasConfig);
-      showToast('success', `同步成功！已由 Google 雲端更新至最新資料 (${nowStr})。`);
+    const result = await syncFromCloud(gasConfig);
+    if (result.ok) {
+      showToast('success', `同步成功！已由 Google 雲端更新至最新資料 (${result.time})。`);
     } else {
-      const message = res.message || '連線 Google 失敗，請確認 Apps Script 部署。';
-      setSyncError(message);
-      setDataSource(dataSource === 'demo' ? 'error' : 'cache');
+      const message = result.message || '連線 Google 失敗，請確認 Apps Script 部署。';
+      markSyncFailed(message);
       showToast('error', message);
     }
   };
 
   // Save new GAS Config from Modal
   const handleSaveGasConfig = async (newConfig: GasConfig): Promise<boolean> => {
-    setIsSyncing(true);
-    const res = await fetchFromGas(newConfig.webAppUrl, newConfig.secretToken);
-    setIsSyncing(false);
-
-    if (res.success && res.details && res.summary) {
-      applyCloudData(res.details, res.summary, res.budgets ?? {}, res.irregular ?? [], newConfig);
+    const result = await syncFromCloud(newConfig);
+    if (result.ok) {
       showToast('success', 'Google 試算表連線成功！已載入最新雲端資料。');
       return true;
-    } else {
-      showToast('error', res.message || '連線失敗，請檢查網址與 Token。');
-      return false;
     }
+    showToast('error', result.message || '連線失敗，請檢查網址與 Token。');
+    return false;
   };
 
   // Reset to demo mode
@@ -237,30 +286,34 @@ export const App: React.FC = () => {
     showToast('warn', '已中斷 Google 連線，切換回 Demo 示範模式。');
   };
 
-  // Available months for filter dropdown
-  const availableMonths = useMemo(() => {
-    const monthSet = new Set<string>();
-    transactions.forEach(t => {
-      const m = normalizeMonthString(t.month) || t.date?.slice(0, 7);
-      if (m && /^\d{4}-\d{2}$/.test(m)) monthSet.add(m);
-    });
-    monthlySummaries.forEach(s => {
-      const m = normalizeMonthString(s.month);
-      if (m && /^\d{4}-\d{2}$/.test(m)) monthSet.add(m);
-    });
-    return Array.from(monthSet).sort((a, b) => b.localeCompare(a));
-  }, [transactions, monthlySummaries]);
+  // Available months for the month selector (newest first, always including the current month)
+  const availableMonths = useMemo(
+    () => buildAvailableMonths(transactions, monthlySummaries, currentMonth),
+    [transactions, monthlySummaries, currentMonth]
+  );
 
   // The dashboard always has one explicit analysis month. Trend range is controlled separately.
   useEffect(() => {
     if (availableMonths.length === 0) return;
     setFilters(prev => {
       if (!prev.selectedMonth || availableMonths.includes(prev.selectedMonth)) return prev;
-      const currentMonth = getCurrentMonthString();
       const fallbackMonth = availableMonths.includes(currentMonth) ? currentMonth : availableMonths[0];
       return { ...prev, selectedMonth: fallbackMonth };
     });
-  }, [availableMonths]);
+  }, [availableMonths, currentMonth]);
+
+  // When the calendar month rolls over while the app is open, follow it if "this month" was selected.
+  const previousCurrentMonth = useRef(currentMonth);
+  useEffect(() => {
+    const previous = previousCurrentMonth.current;
+    previousCurrentMonth.current = currentMonth;
+    if (previous === currentMonth) return;
+    setFilters(prev => (prev.selectedMonth === previous ? { ...prev, selectedMonth: currentMonth } : prev));
+  }, [currentMonth]);
+
+  // Single-month views (overview, KPI cards, cumulative chart, budgets) need a concrete month even
+  // when the selector is on 「全部月份」; they all fall back to the same newest month.
+  const focusMonth = filters.selectedMonth || availableMonths[0] || '';
 
   // Filtered transactions for list view (supporting keyword, category, big expenses, and sorting)
   const filteredTransactions = useMemo(() => {
@@ -305,7 +358,7 @@ export const App: React.FC = () => {
   }, [transactions, monthlySummaries]);
 
   return (
-    <div className="min-h-screen bg-canvas text-slate-900 flex overflow-x-hidden w-full max-w-[100vw] relative">
+    <div className={`min-h-screen bg-canvas text-slate-900 flex overflow-x-hidden w-full max-w-[100vw] relative ${hideAmounts ? 'privacy-mode' : ''}`}>
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-[max(1.25rem,calc(env(safe-area-inset-top,0px)+0.75rem))] right-3.5 sm:right-5 z-50 animate-bounce-short max-w-[90vw]">
@@ -358,6 +411,8 @@ export const App: React.FC = () => {
             lastSyncAt={gasConfig.lastSyncAt}
             lastSyncTime={gasConfig.lastSyncTime}
             syncError={syncError}
+            hideAmounts={hideAmounts}
+            onToggleHideAmounts={toggleHideAmounts}
           />
 
           {isLoading ? (
@@ -371,7 +426,7 @@ export const App: React.FC = () => {
                     <Info className="w-4 h-4 mt-0.5 sm:mt-0 shrink-0" aria-hidden="true" />
                     <p>
                       <strong className="font-bold">Demo 示範模式：</strong>
-                      目前顯示的是擬真範例資料。請在左側點擊「雲端連線設定」綁定您的 Google 試算表，即可查看最新記帳資料。
+                      目前顯示的是擬真範例資料。連線您的 Google 試算表後，就會改為顯示您的記帳資料。
                     </p>
                   </div>
                   <button
@@ -416,7 +471,7 @@ export const App: React.FC = () => {
                 <MonthOverviewCard
                   transactions={transactions}
                   monthlySummaries={dynamicMonthlySummaries}
-                  selectedMonth={filters.selectedMonth}
+                  selectedMonth={focusMonth}
                   budgets={budgets}
                   onViewAll={() => document.getElementById('transactions')?.scrollIntoView({
                     behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
@@ -429,7 +484,7 @@ export const App: React.FC = () => {
               <MetricCards
                 monthlySummaries={dynamicMonthlySummaries}
                 transactions={transactions}
-                selectedMonth={filters.selectedMonth}
+                selectedMonth={focusMonth}
               />
 
               {/* Row 2: 中層雙圖表佈局 (月度收支走勢 7 欄 : 分類甜甜圈 + 垂直佔比 5 欄) */}
@@ -446,7 +501,7 @@ export const App: React.FC = () => {
               <MonthCumulativeChart
                 transactions={transactions}
                 monthlySummaries={dynamicMonthlySummaries}
-                selectedMonth={filters.selectedMonth}
+                selectedMonth={focusMonth}
                 budgets={budgets}
               />
 
@@ -474,7 +529,7 @@ export const App: React.FC = () => {
                   <BudgetProgressPanel
                     transactions={transactions}
                     monthlySummaries={dynamicMonthlySummaries}
-                    selectedMonth={filters.selectedMonth}
+                    selectedMonth={focusMonth}
                     budgets={budgets}
                   />
                 </div>

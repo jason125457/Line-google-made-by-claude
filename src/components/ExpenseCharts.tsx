@@ -232,7 +232,7 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({
                           {formatNTD(d.totalExpense)}
                         </div>
                         <div className="text-[10px] text-slate-400">
-                          半年均線：{formatNTD(avgExpense)}
+                          半年均線：<span className="tabular-nums">{formatNTD(avgExpense)}</span>
                         </div>
                         <div className="text-[10px] text-teal-300 font-semibold pt-1 border-t border-white/10">
                           <span>{isSelected ? '已選取，可按上方 ✕ 取消篩選' : '點擊切換下方交易明細'}</span>
@@ -392,7 +392,7 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3.5 h-0.5 bg-amber-500 border-b border-dashed" />
-              <span className="text-slate-600 font-medium">半年均線 (NT$ {Math.round(avgExpense).toLocaleString()})</span>
+              <span className="text-slate-600 font-medium">半年均線 (<span className="tabular-nums">NT$ {Math.round(avgExpense).toLocaleString()}</span>)</span>
             </span>
           </div>
           <span className="text-[11px] text-slate-400 hidden sm:inline">可點擊篩選</span>
