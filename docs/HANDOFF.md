@@ -7,7 +7,7 @@
 | 項目 | 狀態 |
 |---|---|
 | 前端 | `main` 最新 commit 已由 Cloudflare Pages 自動上線（網站：money.shuns.site） |
-| GAS 後端 | 線上「Claude最新版」部署 = **第 56 版**，內容與 `gas/Code.gs` 一致（clasp 推送） |
+| GAS 後端 | 線上「Claude最新版」部署 = **第 56 版**。`gas/Code.gs` 已多了 Webhook 金鑰（`LINE_WEBHOOK_KEY`）但**尚未部署**，使用者要自己找時間一起做：`npm run gas:deploy` → 編輯器執行 `setupWebhookKey()` → LINE 後台 Webhook URL 加 `?key=` |
 | LINE Webhook / 前端 | 都連「Claude最新版」同一個部署網址；改 GAS 後網址不變 |
 | 測試 | `npm test` 58 個全過；`npm run build` 通過 |
 | 舊部署 | 約 30 個舊部署**未封存**（使用者決定不處理，不影響運作） |
