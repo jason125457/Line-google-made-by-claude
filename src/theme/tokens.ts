@@ -61,6 +61,21 @@ export const categoryFallback = palette.inkSubtle;
 export const categoryColor = (category: string): string =>
   categoryColors[category] ?? categoryFallback;
 
+/** Darker category hues for small text on white or on the tint below (≥4.5:1). */
+export const categoryTextColors: Record<string, string> = {
+  '生活': '#0F766E', // teal-700
+  '家用': '#1D4ED8', // blue-700
+  '社交': '#BE185D', // pink-700
+  '娛樂': '#B45309', // amber-700
+  '雜支': '#4A3AA7',
+};
+
+export const categoryTextColor = (category: string): string =>
+  categoryTextColors[category] ?? palette.inkMuted;
+
+/** Category color at 10% opacity — icon chips and tag backgrounds. */
+export const categoryTint = (category: string): string => `${categoryColor(category)}1A`;
+
 /**
  * Calendar heat scale (sequential, one hue, light → dark). Index = heat level 1–5;
  * text colors keep ≥4.5:1 contrast on each step (white only on the two darkest).

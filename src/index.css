@@ -61,25 +61,12 @@
     box-shadow: 0 6px 20px -2px rgba(17, 26, 24, 0.2);
   }
 
-  /* Live status beacon */
-  .live-beacon {
-    position: relative;
-  }
-  .live-beacon::after {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    border-radius: 9999px;
-    background-color: currentColor;
-    opacity: 0.35;
-    animation: beaconPulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-  }
 }
 
-@keyframes beaconPulse {
-  0% { transform: scale(0.95); opacity: 0.6; }
-  50% { transform: scale(1.6); opacity: 0; }
-  100% { transform: scale(0.95); opacity: 0; }
+/* Keyboard focus ring for every control that does not define its own. */
+:where(button, a, select, [tabindex]):focus-visible {
+  outline: 2px solid theme('colors.primary.DEFAULT');
+  outline-offset: 2px;
 }
 
 /* Custom smooth scrollbar */

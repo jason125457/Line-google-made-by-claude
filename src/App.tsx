@@ -317,8 +317,10 @@ export const App: React.FC = () => {
 
   // Filtered transactions for list view (supporting keyword, category, big expenses, and sorting)
   const filteredTransactions = useMemo(() => {
+    // A keyword search looks through every month; the month filter only applies while browsing.
+    const isSearching = filters.searchQuery.trim() !== '';
     return transactions.filter(t => {
-      if (filters.selectedMonth && t.month !== filters.selectedMonth) {
+      if (!isSearching && filters.selectedMonth && t.month !== filters.selectedMonth) {
         return false;
       }
       if (filters.selectedCategory !== 'all' && t.category !== filters.selectedCategory) {
@@ -466,19 +468,17 @@ export const App: React.FC = () => {
                 </div>
               )}
 
-              {/* 手機首屏：本月已花 / 預算剩餘 / 最近記帳 */}
-              <div className="sm:hidden">
-                <MonthOverviewCard
-                  transactions={transactions}
-                  monthlySummaries={dynamicMonthlySummaries}
-                  selectedMonth={focusMonth}
-                  budgets={budgets}
-                  onViewAll={() => document.getElementById('transactions')?.scrollIntoView({
-                    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-                    block: 'start',
-                  })}
-                />
-              </div>
+              {/* 首屏：本月還可以花 / 每天可花 / 預算節奏（手機另含最近記帳） */}
+              <MonthOverviewCard
+                transactions={transactions}
+                monthlySummaries={dynamicMonthlySummaries}
+                selectedMonth={focusMonth}
+                budgets={budgets}
+                onViewAll={() => document.getElementById('transactions')?.scrollIntoView({
+                  behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+                  block: 'start',
+                })}
+              />
 
               {/* Row 1: 4 大核心 KPI 指標卡 (3 淺 + 1 深反差卡) */}
               <MetricCards

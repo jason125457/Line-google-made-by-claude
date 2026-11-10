@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, TrendingDown, TrendingUp } from 'lucide-react';
 import { Transaction, MonthlySummary, CategoryBudgets } from '../types/finance';
-import { getCurrentMonthString, totalMonthlyBudget } from '../utils/financeCalculations';
+import { totalMonthlyBudget } from '../utils/financeCalculations';
+import { monthProgress } from '../utils/insights';
 import { compareTransactionDates } from '../utils/dateUtils';
 import { categoryColor } from '../theme/tokens';
 
@@ -16,8 +17,9 @@ interface MonthOverviewCardProps {
 const RECENT_COUNT = 5;
 
 /**
- * Mobile-first summary: the three things checked most often on a phone —
- * how much was spent, how much budget is left, and the latest records.
+ * The first thing on the dashboard: how much is left to spend this month, what that means per
+ * day, and whether spending is ahead of or behind an even budget pace. Phones also get the
+ * latest records here; wider screens already show the full list further down.
  */
 export const MonthOverviewCard: React.FC<MonthOverviewCardProps> = ({
   transactions,
@@ -42,13 +44,11 @@ export const MonthOverviewCard: React.FC<MonthOverviewCardProps> = ({
   const isOver = remaining < 0;
   const usedPct = totalBudget > 0 ? Math.round((spent / totalBudget) * 100) : 0;
 
-  // Daily allowance only makes sense for the month in progress.
-  const isCurrentMonth = selectedMonth === getCurrentMonthString();
-  const today = new Date();
-  const daysLeft = isCurrentMonth
-    ? new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() - today.getDate() + 1
-    : 0;
+  // Daily allowance and pace only make sense for the month in progress.
+  const { isCurrent, daysLeft, fraction } = monthProgress(selectedMonth);
   const dailyAllowance = daysLeft > 0 && !isOver ? Math.floor(remaining / daysLeft) : 0;
+  const todayPct = Math.round(fraction * 100);
+  const paceDiff = Math.round(spent - totalBudget * fraction); // > 0 = spending faster than the budget
 
   const recent = useMemo(
     () => [...monthTxns].sort((a, b) => compareTransactionDates(a.date, b.date, false)).slice(0, RECENT_COUNT),
@@ -58,52 +58,100 @@ export const MonthOverviewCard: React.FC<MonthOverviewCardProps> = ({
   const monthLabel = selectedMonth ? `${parseInt(selectedMonth.slice(5), 10)} 月` : '本月';
   const fmt = (n: number) => Math.round(n).toLocaleString();
 
+  const headline = isCurrent
+    ? (isOver ? '本月已超支' : '本月還可以花')
+    : (isOver ? `${monthLabel}超支` : `${monthLabel}結餘`);
+
   return (
-    <section className="fintech-card p-4 space-y-4 min-w-0" aria-label={`${monthLabel}概況`}>
-      {/* Spent + remaining */}
-      <div className="flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-ink-muted">{isCurrentMonth ? '本月已花' : `${monthLabel}總支出`}</p>
-          <p className="mt-1 flex items-baseline gap-1">
+    <section className="fintech-card p-4 sm:p-6 space-y-4 min-w-0" aria-label={`${monthLabel}概況`}>
+      <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-8 lg:gap-12">
+        {/* Headline number */}
+        <div className="min-w-0 shrink-0">
+          <p className="text-xs font-bold text-ink-muted">{headline}</p>
+          <p className="mt-1 flex items-baseline gap-1.5">
             <span className="text-sm font-bold text-ink-subtle">NT$</span>
-            <span className="text-3xl font-extrabold text-ink tracking-tight tabular-nums">{fmt(spent)}</span>
+            <span
+              className={`text-4xl sm:text-5xl font-extrabold tracking-tight tabular-nums ${
+                isOver ? 'text-rose-600' : 'text-ink'
+              }`}
+            >
+              {fmt(Math.abs(remaining))}
+            </span>
           </p>
+          {isCurrent && (
+            <p className="mt-2 text-xs font-semibold text-ink-muted">
+              {isOver ? (
+                `還有 ${daysLeft} 天，接下來的支出都會超出預算`
+              ) : (
+                <>
+                  每天可花 <span className="font-extrabold text-primary-strong tabular-nums">NT$ {fmt(dailyAllowance)}</span>
+                  <span className="text-ink-subtle"> · 還有 {daysLeft} 天</span>
+                </>
+              )}
+            </p>
+          )}
         </div>
-        <div className="text-right shrink-0">
-          <p className="text-xs font-bold text-ink-muted">{isOver ? '已超支' : '預算剩餘'}</p>
-          <p className={`mt-1 text-lg font-extrabold tracking-tight tabular-nums ${isOver ? 'text-rose-600' : 'text-primary-strong'}`}>
-            NT$ {fmt(Math.abs(remaining))}
-          </p>
+
+        {/* Spent vs budget, with where an even pace would be today */}
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-baseline justify-between gap-3 text-xs font-semibold text-ink-muted">
+            <span>
+              已花 <span className="text-sm font-extrabold text-ink tracking-tight tabular-nums">NT$ {fmt(spent)}</span>
+            </span>
+            <span>
+              {isCustom ? '預算' : '參考預算'} <span className="tabular-nums">NT$ {fmt(totalBudget)}</span>
+            </span>
+          </div>
+
+          <div className="relative py-1">
+            <div
+              className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.min(usedPct, 100)}
+              aria-label={`已使用預算 ${usedPct}%`}
+            >
+              <div
+                className={`h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none ${
+                  isOver ? 'bg-rose-500' : usedPct > 85 ? 'bg-amber-500' : 'bg-primary'
+                }`}
+                style={{ width: `${Math.min(usedPct, 100)}%` }}
+              />
+            </div>
+            {isCurrent && (
+              <span
+                className="absolute inset-y-0 w-0.5 -ml-px rounded-full bg-ink"
+                style={{ left: `${todayPct}%` }}
+                aria-hidden="true"
+              />
+            )}
+          </div>
+
+          <div className="flex items-center justify-between gap-3 text-[11px] font-semibold text-ink-muted">
+            <span>
+              已用 {usedPct}%{isCurrent && ` · 今天應到 ${todayPct}%`}
+            </span>
+            {isCurrent && totalBudget > 0 && paceDiff !== 0 && (
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold ${
+                  paceDiff > 0 ? 'bg-amber-50 text-amber-800' : 'bg-teal-50 text-teal-800'
+                }`}
+              >
+                {paceDiff > 0
+                  ? <TrendingUp className="w-3 h-3" aria-hidden="true" />
+                  : <TrendingDown className="w-3 h-3" aria-hidden="true" />}
+                <span>
+                  比預算節奏{paceDiff > 0 ? '多花' : '少花'} <span className="tabular-nums">NT$ {fmt(Math.abs(paceDiff))}</span>
+                </span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Budget progress */}
-      <div className="space-y-1.5">
-        <div
-          className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.min(usedPct, 100)}
-          aria-label={`已使用預算 ${usedPct}%`}
-        >
-          <div
-            className={`h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none ${
-              isOver ? 'bg-rose-500' : usedPct > 85 ? 'bg-amber-500' : 'bg-primary'
-            }`}
-            style={{ width: `${Math.min(usedPct, 100)}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-[11px] font-semibold text-ink-muted tabular-nums">
-          <span>
-            已用 {usedPct}% · {isCustom ? '預算' : '參考預算'} NT$ {fmt(totalBudget)}
-          </span>
-          {dailyAllowance > 0 && <span>每天可花 NT$ {fmt(dailyAllowance)}</span>}
-        </div>
-      </div>
-
-      {/* Recent records */}
-      <div className="border-t border-line pt-3">
+      {/* Recent records (phones only) */}
+      <div className="border-t border-line pt-3 sm:hidden">
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-sm font-extrabold text-ink">最近記帳</h3>
           <button

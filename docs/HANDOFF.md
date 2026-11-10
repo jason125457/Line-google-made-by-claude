@@ -51,6 +51,14 @@ npm run gas:deploy -- 這次改了什麼   # 推送 gas/ → 建立新版本 →
 - 切回前景（或重新連網）且資料超過 5 分鐘就自動同步
 - GAS：`LINE_WEBHOOK_KEY` Webhook 秘密參數（`setupWebhookKey()`），未設定時不檢查
 
+### 2026-11-10 優化盤點・第二批（已 commit；**push 到 `main` 後才會上線**）
+- 首屏 `MonthOverviewCard` 改成主數字「本月還可以花」＋每天可花＋「比預算節奏多/少花」，桌機也顯示
+- 總預算條與各類別進度條加「今天應到的位置」刻度（只在進行中月份）
+- 靜態「理財思維」金句卡換成「本月洞察」（`utils/insights.ts`，有測試）
+- 明細搜尋自動跨月；篩選標籤的 ✕ 換成 Lucide 圖示並加 aria-label；手機列顯示類別
+- 類別顏色統一走 `tokens.ts`（`categoryTextColor` / `categoryTint`）；移除 `.live-beacon`；全站鍵盤 focus 外框
+- 第二批還沒做的：其餘死碼（Sidebar 手機抽屜、`clsx` / `tailwind-merge`、GAS v1）、Recharts 延後載入、Service Worker 清舊快取、GAS CacheService、明細跳到試算表列
+
 ### 試算表（使用者的「記帳」）
 - 「不固定大額支出」分頁新增 C 欄「日期」，7 筆暫填 **2026/1/1（預設值，待使用者改成實際日期）**
 - 「預算設定」分頁已由 `setupBudgetSheet` 建立
@@ -100,7 +108,7 @@ npm run gas:deploy -- 這次改了什麼   # 推送 gas/ → 建立新版本 →
 ## 6. 驗證清單（改完前端時）
 
 ```bash
-npm test          # 51 tests
+npm test          # 66 tests
 npm run build     # tsc + vite
 ```
 

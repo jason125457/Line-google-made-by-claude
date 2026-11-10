@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, ArrowUpDown, Flame, CalendarDays } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, ArrowUpDown, Flame, CalendarDays, X } from 'lucide-react';
 import { Transaction } from '../types/finance';
 import { STANDARD_CATEGORIES } from '../constants/categories';
 import { categoryIcon } from '../constants/categoryIcons';
 import { formatShortDateTime } from '../utils/dateUtils';
+import { categoryTextColor, categoryTint } from '../theme/tokens';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -18,17 +19,6 @@ interface TransactionListProps {
   onlyBigExpenses?: boolean;
   onToggleBigExpenses?: () => void;
 }
-
-const CATEGORY_ICONS: Record<
-  string,
-  { bg: string; text: string; pillBg: string; pillText: string }
-> = {
-  '生活': { bg: 'bg-teal-50', text: 'text-teal-600', pillBg: 'bg-teal-50', pillText: 'text-teal-700' },
-  '家用': { bg: 'bg-blue-50', text: 'text-blue-600', pillBg: 'bg-blue-50', pillText: 'text-blue-700' },
-  '社交': { bg: 'bg-pink-50', text: 'text-pink-600', pillBg: 'bg-pink-50', pillText: 'text-pink-700' },
-  '娛樂': { bg: 'bg-amber-50', text: 'text-amber-600', pillBg: 'bg-amber-50', pillText: 'text-amber-700' },
-  '雜支': { bg: 'bg-violet-50', text: 'text-violet-700', pillBg: 'bg-violet-50', pillText: 'text-violet-800' },
-};
 
 export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
@@ -59,6 +49,11 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     setCurrentPage(1);
   }, [selectedMonth, selectedCategory, onlyBigExpenses, searchQuery, sortBy]);
 
+  // A keyword search covers every month (see App), so the month pill gives way to a notice
+  // and rows show their year.
+  const isSearching = searchQuery.trim() !== '';
+  const showYear = isSearching || !selectedMonth;
+
   const totalPages = Math.ceil(transactions.length / pageSize) || 1;
   const currentSafePage = Math.min(currentPage, totalPages);
   const startIndex = (currentSafePage - 1) * pageSize;
@@ -78,17 +73,31 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             </h3>
 
             {/* Active Month Filter Pill with Reset Button */}
-            {selectedMonth && (
+            {isSearching ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold animate-fade-in shrink-0">
+                <Search className="w-3 h-3" aria-hidden="true" />
+                <span>搜尋全部月份</span>
+                {onSearchChange && (
+                  <button
+                    onClick={() => onSearchChange('')}
+                    className="-mr-1 p-0.5 rounded-full hover:bg-amber-100"
+                    aria-label="清除搜尋"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            ) : selectedMonth && (
               <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 text-xs font-bold animate-fade-in shrink-0">
                 <CalendarDays className="w-3 h-3" aria-hidden="true" />
                 <span>{selectedMonth}</span>
                 {onClearMonth && (
                   <button
                     onClick={onClearMonth}
-                    className="hover:text-teal-950 font-black ml-0.5 leading-none"
-                    title="清除月份篩選，顯示全部"
+                    className="-mr-1 p-0.5 rounded-full hover:bg-teal-100"
+                    aria-label="清除月份篩選，顯示全部月份"
                   >
-                    ✕
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -101,10 +110,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 {onCategoryChange && (
                   <button
                     onClick={() => onCategoryChange('all')}
-                    className="hover:text-indigo-950 font-black ml-0.5 leading-none"
-                    title="清除類別篩選"
+                    className="-mr-1 p-0.5 rounded-full hover:bg-indigo-100"
+                    aria-label="清除類別篩選"
                   >
-                    ✕
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -141,7 +150,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   onSearchChange(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder="搜尋項目名稱或金額..."
+                placeholder="搜尋項目或金額（跨所有月份）"
                 aria-label="搜尋交易項目、類別或金額"
                 className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-slate-300 transition-all"
               />
@@ -195,7 +204,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       <div className="divide-y divide-slate-100 my-2">
         {currentRecords.length > 0 ? (
           currentRecords.map((t) => {
-            const meta = CATEGORY_ICONS[t.category] || CATEGORY_ICONS['生活'];
+            const tint = { color: categoryTextColor(t.category), backgroundColor: categoryTint(t.category) };
             const Icon = categoryIcon(t.category);
             const isBig = t.amount >= 1000;
 
@@ -206,10 +215,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               >
                 {/* Left: Icon + Item details */}
                 <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`w-10 h-10 rounded-2xl ${meta.bg} ${meta.text} flex items-center justify-center shrink-0 shadow-sm`}
-                  >
-                    <Icon className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={tint}>
+                    <Icon className="w-5 h-5" aria-hidden="true" />
                   </div>
 
                   <div className="min-w-0">
@@ -219,7 +226,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       </span>
                     </div>
                     <div className="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1.5">
-                      <time dateTime={t.date}>{formatShortDateTime(t.date)}</time>
+                      <time dateTime={t.date}>
+                        {showYear && `${t.month.slice(0, 4)}/`}{formatShortDateTime(t.date)}
+                      </time>
+                      <span className="sm:hidden" style={{ color: tint.color }}>· {t.category}</span>
                     </div>
                   </div>
                 </div>
@@ -228,7 +238,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 <div className="flex items-center gap-3 shrink-0">
                   {/* Category capsule */}
                   <span
-                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${meta.pillBg} ${meta.pillText} hidden sm:inline-block`}
+                    className="text-[11px] font-semibold px-2.5 py-1 rounded-full hidden sm:inline-block"
+                    style={tint}
                   >
                     {t.category}
                   </span>

@@ -55,12 +55,12 @@ account_web/
 │   │   ├── CalendarPage.tsx   # 消費月曆熱圖：每日顏色相對近 3 個月日均，點日期看當天明細
 │   │   ├── ReviewPage.tsx     # 月度回顧：總額 vs 平均、類別占比、最大一筆、最常記項目、星期分布、連續記帳
 │   │   ├── TopGreetingBar.tsx # 問候語、分析月份選單、同步按鈕
-│   │   ├── MonthOverviewCard.tsx # 手機首屏：本月已花、預算剩餘、最近 5 筆
+│   │   ├── MonthOverviewCard.tsx # 首屏（所有寬度）：本月還可以花、每天可花、預算條＋今天應到刻度；手機另含最近 5 筆
 │   │   ├── DashboardSkeleton.tsx # 首次載入（無快取）時的骨架畫面
 │   │   ├── MetricCards.tsx    # 4 大 KPI（當月支出 vs 上月同期、半年均線、最高單筆、月底推估）
 │   │   ├── ExpenseCharts.tsx  # 柱狀/走勢雙視圖 + 類別甜甜圈圖 (支援 Drill-down 連動篩選)
 │   │   ├── MonthCumulativeChart.tsx # 當月每日累計支出 vs 上月同期 vs 預算進度（單一 Y 軸，進行中月份止於今天）
-│   │   ├── BudgetProgressPanel.tsx # 類別支出進度 + 週末/平日洞察
+│   │   ├── BudgetProgressPanel.tsx # 類別支出進度（含今天應到刻度）+ 本月洞察卡（utils/insights.ts）
 │   │   ├── TransactionList.tsx# 交易明細列表 (分頁、類別 Tag、搜尋、排序、大額徽章)
 │   │   ├── MonthlyBreakdownPage.tsx # 每月花費分析頁（延遲載入）：期間切換、摘要卡、固定順序堆疊圖（可單獨比較類別）、各類別小圖、月份卡
 │   │   └── SyncModal.tsx      # Google Apps Script URL 與 Token 雲端設定彈窗
@@ -76,6 +76,7 @@ account_web/
 │   │   ├── dateUtils.ts       # 上午/下午、序列號、ISO 等日期解析
 │   │   ├── financeCalculations.ts # 月彙總、半年均線、上月同期比較
 │   │   ├── calendarReview.ts  # 月曆熱圖與月度回顧的純函式（日均基準、熱度等級、常記項目、連續記帳）
+│   │   ├── insights.ts        # monthProgress（月份進度）與 buildMonthInsights（預算節奏、較上月同期、零支出日、週末占比）
 │   │   ├── demoData.ts        # 內建擬真 Demo 資料 (保護真實隱私)
 │   │   ├── storage.ts         # LocalStorage 讀寫與快取版本遷移 (CACHE_VERSION)
 │   │   └── __tests__/         # Vitest 回歸測試（地雷 1、2、5 都有覆蓋，TZ 固定 Asia/Taipei）
@@ -136,7 +137,9 @@ account_web/
 - **風格基調**：暖米白底的金融科技風格（1px 髮絲邊框、低彩度白卡、深色側欄 + 金色強調）。
 - **色彩 Token**：唯一來源是 `src/theme/tokens.ts`，透過 `tailwind.config.ts` 提供 `bg-canvas`、`border-line`、`text-ink-muted`、`bg-primary`、`bg-gold`、`bg-night` 等 class；Recharts 直接 import `palette` / `categoryColor`。**元件內禁止寫死 hex 色碼。**
 - **預算**：來自試算表「預算設定」分頁（doGet v2 的 `budgets`），未設定的類別以半年均值比例當「參考」值（`resolveCategoryBudgets`）。
-- **手機首屏**：`MonthOverviewCard`（本月已花 / 預算剩餘 / 最近 5 筆），僅在 `< sm` 顯示。
+- **首屏**：`MonthOverviewCard` 在所有寬度顯示（主數字「本月還可以花」、每天可花、預算條上的「今天應到」刻度）；最近 5 筆只在 `< sm` 顯示。
+- **類別色**：圖表填色用 `categoryColor`，小字用 `categoryTextColor`，圖示底／標籤底用 `categoryTint`（都在 `tokens.ts`）；元件內不要再建 Tailwind 類別色對照表。
+- **搜尋**：明細有關鍵字時自動跨所有月份（忽略月份篩選），列上會顯示年份。
 - **導覽**：手機與平板用底部導覽列（`BottomNav`），桌機用側欄；新增頁面只改 `constants/navigation.ts`。月曆熱圖用 `heatScale`，深色卡片上的類別色用 `categoryColorsOnDark`。
 - **數字規範**：所有金額數值必須強制加上 **`tabular-nums`**（避免跳動對齊）與 **`tracking-tight`**。隱私模式（頂部眼睛按鈕）靠 `.privacy-mode .tabular-nums` 模糊金額，所以 `tabular-nums` 只包住金額本身、別包住整句標籤；新增金額沒加這個 class 就會在隱私模式露出。
 - **分析月份**：月份選單可選「全部月份」（`selectedMonth = ''`）。只能看單月的元件（首屏、KPI、累計走勢、預算）一律收 App 的 `focusMonth`（選定月份，否則最新月份）；明細與分類圓餅才吃 `''`。月份清單用 `buildAvailableMonths`，有資料時一定包含本月。
