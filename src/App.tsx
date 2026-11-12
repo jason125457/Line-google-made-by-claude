@@ -8,12 +8,10 @@ import { CalendarPage } from './components/CalendarPage';
 import { ReviewPage } from './components/ReviewPage';
 import { BottomNav } from './components/BottomNav';
 import { AppTab } from './constants/navigation';
-import { MonthCumulativeChart } from './components/MonthCumulativeChart';
-import { ExpenseCharts } from './components/ExpenseCharts';
 import { TransactionList } from './components/TransactionList';
 import { BudgetProgressPanel } from './components/BudgetProgressPanel';
 import { SyncModal } from './components/SyncModal';
-import { Transaction, MonthlySummary, GasConfig, FilterState, DataSource, CategoryBudgets, IrregularExpense } from './types/finance';
+import { Transaction, MonthlySummary, GasConfig, FilterState, SortOption, DataSource, CategoryBudgets, IrregularExpense } from './types/finance';
 import { fetchFromGas, normalizeMonthString } from './utils/gasApi';
 import { DEMO_TRANSACTIONS, DEMO_SUMMARIES, DEMO_IRREGULAR } from './utils/demoData';
 import { buildAvailableMonths, calculateDynamicMonthlySummaries, getCurrentMonthString } from './utils/financeCalculations';
@@ -34,8 +32,21 @@ const AUTO_SYNC_AFTER_MS = 5 * 60 * 1000;
 
 type SyncResult = { ok: true; time: string } | { ok: false; message: string };
 
+// Everything that draws with Recharts (~590 KB) loads after the first paint; the overview card,
+// KPI cards, budget panel and transaction list render without it.
 const MonthlyBreakdownPage = lazy(() =>
   import('./components/MonthlyBreakdownPage').then(m => ({ default: m.MonthlyBreakdownPage }))
+);
+const ExpenseCharts = lazy(() =>
+  import('./components/ExpenseCharts').then(m => ({ default: m.ExpenseCharts }))
+);
+const MonthCumulativeChart = lazy(() =>
+  import('./components/MonthCumulativeChart').then(m => ({ default: m.MonthCumulativeChart }))
+);
+
+/** Holds the chart's space while its code loads, so the page below does not jump. */
+const ChartPlaceholder: React.FC<{ className: string }> = ({ className }) => (
+  <div className={`fintech-card animate-pulse motion-reduce:animate-none ${className}`} role="status" aria-label="圖表載入中" />
 );
 
 export const App: React.FC = () => {
@@ -75,9 +86,6 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0 });
   };
 
-  // Mobile sidebar state
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
   // Modals
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
@@ -106,11 +114,11 @@ export const App: React.FC = () => {
   };
 
   // Toast notification helper
-  const toastTimerRef = useRef<any>(null);
+  const toastTimerRef = useRef<number | null>(null);
   const showToast = (type: 'success' | 'warn' | 'error', text: string) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     setToastMessage({ type, text });
-    toastTimerRef.current = setTimeout(() => setToastMessage(null), 4000);
+    toastTimerRef.current = window.setTimeout(() => setToastMessage(null), 4000);
   };
 
   const selectDefaultMonth = (details: Transaction[], summaries: MonthlySummary[]) => {
@@ -363,9 +371,13 @@ export const App: React.FC = () => {
     <div className={`min-h-screen bg-canvas text-slate-900 flex overflow-x-hidden w-full max-w-[100vw] relative ${hideAmounts ? 'privacy-mode' : ''}`}>
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-[max(1.25rem,calc(env(safe-area-inset-top,0px)+0.75rem))] right-3.5 sm:right-5 z-50 animate-bounce-short max-w-[90vw]">
+        <div
+          className="fixed top-[max(1.25rem,calc(env(safe-area-inset-top,0px)+0.75rem))] right-3.5 sm:right-5 z-50 animate-bounce-short max-w-[min(90vw,26rem)]"
+          role="status"
+          aria-live="polite"
+        >
           <div
-            className={`px-4 py-3 rounded-2xl shadow-xl border flex items-center space-x-2 text-xs font-semibold ${
+            className={`px-4 py-3 rounded-2xl shadow-xl border flex items-start space-x-2 text-xs font-semibold leading-relaxed ${
               toastMessage.type === 'success'
                 ? 'bg-teal-900 text-teal-50 border-teal-700'
                 : toastMessage.type === 'warn'
@@ -374,11 +386,11 @@ export const App: React.FC = () => {
             }`}
           >
             {toastMessage.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 mt-0.5 text-teal-400 shrink-0" aria-hidden="true" />
             ) : (
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-400 shrink-0" aria-hidden="true" />
             )}
-            <span className="truncate">{toastMessage.text}</span>
+            <span className="min-w-0 break-words">{toastMessage.text}</span>
           </div>
         </div>
       )}
@@ -394,8 +406,6 @@ export const App: React.FC = () => {
         lastSyncTime={gasConfig.lastSyncTime}
         lastSyncAt={gasConfig.lastSyncAt}
         syncError={syncError}
-        isOpenMobile={isMobileSidebarOpen}
-        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
       {/* 2. Right Main Content Area */}
@@ -488,22 +498,26 @@ export const App: React.FC = () => {
               />
 
               {/* Row 2: 中層雙圖表佈局 (月度收支走勢 7 欄 : 分類甜甜圈 + 垂直佔比 5 欄) */}
-              <ExpenseCharts
-                monthlySummaries={dynamicMonthlySummaries}
-                transactions={transactions}
-                selectedMonth={filters.selectedMonth}
-                selectedCategory={filters.selectedCategory}
-                onCategoryClick={handleCategoryDrillDown}
-                onMonthClick={handleMonthDrillDown}
-              />
+              <Suspense fallback={<ChartPlaceholder className="h-[26rem]" />}>
+                <ExpenseCharts
+                  monthlySummaries={dynamicMonthlySummaries}
+                  transactions={transactions}
+                  selectedMonth={filters.selectedMonth}
+                  selectedCategory={filters.selectedCategory}
+                  onCategoryClick={handleCategoryDrillDown}
+                  onMonthClick={handleMonthDrillDown}
+                />
+              </Suspense>
 
               {/* 本月每日累計支出走勢（對照上月同期與預算進度） */}
-              <MonthCumulativeChart
-                transactions={transactions}
-                monthlySummaries={dynamicMonthlySummaries}
-                selectedMonth={focusMonth}
-                budgets={budgets}
-              />
+              <Suspense fallback={<ChartPlaceholder className="h-[24rem]" />}>
+                <MonthCumulativeChart
+                  transactions={transactions}
+                  monthlySummaries={dynamicMonthlySummaries}
+                  selectedMonth={focusMonth}
+                  budgets={budgets}
+                />
+              </Suspense>
 
               {/* Row 3: 下層雙分欄佈局 (近期交易 7 欄 : 預算進度與生活洞察 5 欄) */}
               <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 min-w-0">
@@ -518,7 +532,7 @@ export const App: React.FC = () => {
                     searchQuery={filters.searchQuery}
                     onSearchChange={(q) => setFilters(prev => ({ ...prev, searchQuery: q }))}
                     sortBy={filters.sortBy}
-                    onSortChange={(sort) => setFilters(prev => ({ ...prev, sortBy: sort as any }))}
+                    onSortChange={(sort) => setFilters(prev => ({ ...prev, sortBy: sort as SortOption }))}
                     onlyBigExpenses={filters.onlyBigExpenses}
                     onToggleBigExpenses={() => setFilters(prev => ({ ...prev, onlyBigExpenses: !prev.onlyBigExpenses }))}
                   />

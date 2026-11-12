@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, RefreshCw, Coffee, Sun, Moon, Eye, EyeOff } from 'lucide-react';
+import { Calendar, ChevronDown, RefreshCw, Coffee, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import { DataSource } from '../types/finance';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { useNow } from '../hooks/useNow';
@@ -38,7 +38,7 @@ export const TopGreetingBar: React.FC<TopGreetingBarProps> = ({
   const now = useNow();
 
   // Determine greeting based on current hour
-  const currentHour = new Date().getHours();
+  const currentHour = now.getHours();
   const greeting = currentHour < 12 ? '早安' : currentHour < 18 ? '午安' : '晚安';
   const GreetingIcon = currentHour < 12 ? Coffee : currentHour < 18 ? Sun : Moon;
 
@@ -99,9 +99,7 @@ export const TopGreetingBar: React.FC<TopGreetingBarProps> = ({
                 ))}
               </select>
             </div>
-            <span className="pointer-events-none text-[10px] text-slate-400 shrink-0">
-              ▼
-            </span>
+            <ChevronDown className="pointer-events-none w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
           </div>
         </div>}
 
@@ -113,7 +111,7 @@ export const TopGreetingBar: React.FC<TopGreetingBarProps> = ({
             hideAmounts ? 'bg-night border-night text-white' : 'bg-white border-line hover:bg-slate-50 text-slate-500'
           }`}
           title={hideAmounts ? '顯示金額' : '隱藏金額'}
-          aria-label="隱藏所有金額"
+          aria-label="隱藏金額"
         >
           {hideAmounts ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
         </button>

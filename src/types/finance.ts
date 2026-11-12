@@ -27,13 +27,6 @@ export interface IrregularExpense {
   date: string; // optional, '' when the sheet has no date column
 }
 
-export interface CategorySummary {
-  category: string;
-  totalAmount: number;
-  percentage: number;
-  count: number;
-}
-
 export interface GasConfig {
   webAppUrl: string;
   secretToken: string;
@@ -44,7 +37,7 @@ export interface GasConfig {
 export type SortOption = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc';
 
 export interface FilterState {
-  selectedMonth: string;              // 'all' 或 '2026-09'
+  selectedMonth: string;              // '' (全部月份) 或 '2026-09'
   selectedCategory: string;           // 'all' 或 '生活'
   searchQuery: string;                // 關鍵字搜尋
   onlyBigExpenses: boolean;           // 只看大額 (>= 1,000)

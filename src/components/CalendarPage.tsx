@@ -64,8 +64,8 @@ export const CalendarPage: React.FC<CalendarPageProps> = ({ transactions, select
         </button>
         <div className="text-center min-w-0">
           <h2 className="text-lg sm:text-xl font-extrabold text-ink tracking-tight">{y} 年 {parseInt(mo, 10)} 月</h2>
-          <p className="text-xs text-ink-muted font-medium tabular-nums">
-            已花 {fmt(monthTotal)} · 記帳 {loggedDays} 天
+          <p className="text-xs text-ink-muted font-medium">
+            已花 <span className="tabular-nums">{fmt(monthTotal)}</span> · 記帳 {loggedDays} 天
           </p>
         </div>
         <button

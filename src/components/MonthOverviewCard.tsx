@@ -142,7 +142,7 @@ export const MonthOverviewCard: React.FC<MonthOverviewCardProps> = ({
                   ? <TrendingUp className="w-3 h-3" aria-hidden="true" />
                   : <TrendingDown className="w-3 h-3" aria-hidden="true" />}
                 <span>
-                  比預算節奏{paceDiff > 0 ? '多花' : '少花'} <span className="tabular-nums">NT$ {fmt(Math.abs(paceDiff))}</span>
+                  比預算進度{paceDiff > 0 ? '多花' : '少花'} <span className="tabular-nums">NT$ {fmt(Math.abs(paceDiff))}</span>
                 </span>
               </span>
             )}

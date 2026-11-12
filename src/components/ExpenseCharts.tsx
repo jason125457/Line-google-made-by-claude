@@ -14,10 +14,9 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { BarChart2, TrendingUp, Filter, CalendarDays } from 'lucide-react';
+import { BarChart2, TrendingUp, Filter, CalendarDays, X } from 'lucide-react';
 import { MonthlySummary, Transaction } from '../types/finance';
-import { calculateSixMonthAverage } from '../utils/financeCalculations';
-import { getCurrentMonthString } from '../utils/financeCalculations';
+import { calculateSixMonthAverage, getCurrentMonthString } from '../utils/financeCalculations';
 import { palette, categoryColor } from '../theme/tokens';
 
 interface ExpenseChartsProps {
@@ -92,7 +91,7 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6 min-w-0">
       {/* ── 1. 左側：收支/月度趨勢圖 (7 欄) ── */}
       <div className="xl:col-span-7 fintech-card p-4 sm:p-6 flex flex-col justify-between min-w-0 overflow-hidden">
         {/* Header */}
@@ -115,7 +114,7 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({
                 >
                   <CalendarDays className="w-3 h-3" aria-hidden="true" />
                   分析月份：{selectedMonth}
-                  <span aria-hidden="true">✕</span>
+                  <X className="w-3 h-3" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -235,7 +234,7 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({
                           半年均線：<span className="tabular-nums">{formatNTD(avgExpense)}</span>
                         </div>
                         <div className="text-[10px] text-teal-300 font-semibold pt-1 border-t border-white/10">
-                          <span>{isSelected ? '已選取，可按上方 ✕ 取消篩選' : '點擊切換下方交易明細'}</span>
+                          <span>{isSelected ? '已選取，再點一次可取消篩選' : '點擊切換下方交易明細'}</span>
                         </div>
                       </div>
                     );
@@ -337,7 +336,7 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({
                           {formatNTD(d.totalExpense)}
                         </div>
                         <div className="text-[10px] text-teal-300 font-semibold pt-1 border-t border-white/10">
-                          <span>{isSelected ? '已選取，可按上方 ✕ 取消篩選' : '點擊切換下方交易明細'}</span>
+                          <span>{isSelected ? '已選取，再點一次可取消篩選' : '點擊切換下方交易明細'}</span>
                         </div>
                       </div>
                     );
@@ -410,9 +409,10 @@ export const ExpenseCharts: React.FC<ExpenseChartsProps> = ({
                 <span className="truncate">{selectedCategory}</span>
                 <button
                   onClick={() => onCategoryClick && onCategoryClick(selectedCategory)}
-                  className="hover:text-indigo-900 font-bold ml-0.5 shrink-0"
+                  className="-mr-1 p-0.5 rounded-full hover:bg-indigo-100 shrink-0"
+                  aria-label={`取消「${selectedCategory}」類別篩選`}
                 >
-                  ✕
+                  <X className="w-3 h-3" aria-hidden="true" />
                 </button>
               </span>
             )}

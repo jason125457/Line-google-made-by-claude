@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Search, ArrowUpDown, Flame, CalendarDays, X } from 'lucide-react';
 import { Transaction } from '../types/finance';
 import { STANDARD_CATEGORIES } from '../constants/categories';
@@ -49,10 +49,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     setCurrentPage(1);
   }, [selectedMonth, selectedCategory, onlyBigExpenses, searchQuery, sortBy]);
 
-  // A keyword search covers every month (see App), so the month pill gives way to a notice
-  // and rows show their year.
+  // A keyword search covers every month (see App), so the month pill gives way to a notice.
   const isSearching = searchQuery.trim() !== '';
-  const showYear = isSearching || !selectedMonth;
+  // Rows show their year only when the list actually spans more than one month.
+  const showYear = useMemo(() => new Set(transactions.map(t => t.month)).size > 1, [transactions]);
 
   const totalPages = Math.ceil(transactions.length / pageSize) || 1;
   const currentSafePage = Math.min(currentPage, totalPages);

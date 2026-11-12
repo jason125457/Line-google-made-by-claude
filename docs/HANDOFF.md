@@ -57,7 +57,13 @@ npm run gas:deploy -- 這次改了什麼   # 推送 gas/ → 建立新版本 →
 - 靜態「理財思維」金句卡換成「本月洞察」（`utils/insights.ts`，有測試）
 - 明細搜尋自動跨月；篩選標籤的 ✕ 換成 Lucide 圖示並加 aria-label；手機列顯示類別
 - 類別顏色統一走 `tokens.ts`（`categoryTextColor` / `categoryTint`）；移除 `.live-beacon`；全站鍵盤 focus 外框
-- 第二批還沒做的：其餘死碼（Sidebar 手機抽屜、`clsx` / `tailwind-merge`、GAS v1）、Recharts 延後載入、Service Worker 清舊快取、GAS CacheService、明細跳到試算表列
+
+### 2026-11-12 全專案盤點（修掉有把握的部分）
+- 死碼：Sidebar 手機抽屜（App 從未開啟）、`clsx` / `tailwind-merge`、`CategorySummary`、`parseFlexibleDate` 永遠走不到的 24 小時分支、`slideRight` 動畫；`.serena/` 改為不進版控
+- 效能：圖表元件 lazy 載入並拿掉 `manualChunks`，首屏 JS 由約 720 KB 降到約 255 KB（未壓縮）；Service Worker 對雜湊檔改 cache-first 並限制 30 個
+- 一致性：「預算節奏」統一成「預算進度」；殘留的「✕」「▼」文字換成 Lucide 圖示；骨架畫面跟上新首屏；月曆頁隱私模式不再把整句標籤一起模糊；Toast 不再截斷長訊息
+- README / DESIGN.md / AGENTS.md 同步
+- **未處理、待使用者決定**的項目見當次對話的清單（GAS v1 相容路徑、`summary` 重複計算、字重 800 未載入、`designs/`、`npm audit` 等）
 
 ### 試算表（使用者的「記帳」）
 - 「不固定大額支出」分頁新增 C 欄「日期」，7 筆暫填 **2026/1/1（預設值，待使用者改成實際日期）**
@@ -74,16 +80,13 @@ npm run gas:deploy -- 這次改了什麼   # 推送 gas/ → 建立新版本 →
 
 設計示意圖畫布（私人連結，使用者可開）：https://claude.ai/artifact/5cgpxd4YpfKGzoDUT9xB18
 
-優化盤點（2026-10-30）第二批，使用者已同意方向、尚未實作：
+優化盤點（2026-10-30）第二批中還沒做的：
 
 | 項目 | 備註 |
 |---|---|
-| 首頁主數字改「本月還可以花」＋每天可花 | 純前端（與下表 A 同一件事） |
-| 預算進度條加「今天應到的位置」刻度 | 純前端 |
-| 移除死碼：Sidebar 手機抽屜、`.live-beacon`、未用的 `clsx` / `tailwind-merge`、GAS v1 與月度彙總相關、`.serena/` | |
-| 類別顏色統一用 `tokens.ts`（TransactionList / BudgetProgressPanel 各有一份 Tailwind 色） | |
-| Recharts（588KB）延後載入；Service Worker 清舊快取；GAS doGet 加 CacheService | 效能 |
-| 靜態「理財思維」金句卡換成真洞察；明細點開可跳到試算表那一列；搜尋自動跨月 | 功能 |
+| 移除 GAS v1 與月度彙總相關（其餘死碼已於 11-10、11-12 清掉） | 要先確認線上 GAS 是 v2 |
+| GAS doGet 加 CacheService | 效能 |
+| 明細點開可跳到試算表那一列 | 功能 |
 
 | 優先 | 項目 | 備註 |
 |---|---|---|

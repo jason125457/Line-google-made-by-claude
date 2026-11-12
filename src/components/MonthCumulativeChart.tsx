@@ -117,7 +117,7 @@ export const MonthCumulativeChart: React.FC<MonthCumulativeChartProps> = ({
   const ticks = [1, 5, 10, 15, 20, 25, series.length];
 
   const summary = latest
-    ? `${monthLabel}截至 ${lastDayLabel} 累計 ${fmt(latest.cumulative!)}，上月同期 ${latest.lastMonth !== null ? fmt(latest.lastMonth) : '無資料'}，預算進度 ${fmt(latest.pace)}${projectionEnd !== null ? `，依目前速度月底約 ${fmt(projectionEnd)}` : ''}。`
+    ? `${monthLabel}截至 ${lastDayLabel} 累計 ${fmt(latest.cumulative!)}，上月同期 ${latest.lastMonth > 0 ? fmt(latest.lastMonth) : '無資料'}，預算進度 ${fmt(latest.pace)}${projectionEnd !== null ? `，依目前速度月底約 ${fmt(projectionEnd)}` : ''}。`
     : '';
 
   return (

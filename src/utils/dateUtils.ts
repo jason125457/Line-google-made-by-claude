@@ -21,8 +21,8 @@ export function parseFlexibleDate(raw: unknown): Date | null {
     return new Date(ms + d.getTimezoneOffset() * 60000);
   }
 
-  // 2. Chinese format with 上午/下午 or AM/PM
-  // e.g. "2026/5/9 下午 8:46:31" or "2026-05-09 上午 10:20:05"
+  // 2. Date with optional 上午/下午 or AM/PM and optional time (12- or 24-hour)
+  // e.g. "2026/5/9 下午 8:46:31", "2026-05-09 20:46:31", "2026/5/9"
   const match12 = s.match(
     /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:\s+(上午|下午|AM|PM))?(?:\s*(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/i
   );
@@ -43,19 +43,7 @@ export function parseFlexibleDate(raw: unknown): Date | null {
     return new Date(year, month, day, hour, minute, second);
   }
 
-  // 3. 24-hour format: e.g. "2026/5/9 20:46:31" or "2026-05-09 20:46:31"
-  const match24 = s.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
-  if (match24) {
-    const year = parseInt(match24[1], 10);
-    const month = parseInt(match24[2], 10) - 1;
-    const day = parseInt(match24[3], 10);
-    const hour = match24[4] != null ? parseInt(match24[4], 10) : 0;
-    const minute = match24[5] != null ? parseInt(match24[5], 10) : 0;
-    const second = match24[6] != null ? parseInt(match24[6], 10) : 0;
-    return new Date(year, month, day, hour, minute, second);
-  }
-
-  // 4. ISO or standard Date parse
+  // 3. ISO or standard Date parse
   const d = new Date(s);
   if (!isNaN(d.getTime())) {
     return d;

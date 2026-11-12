@@ -1,10 +1,5 @@
-import React, { useEffect } from 'react';
-import {
-  Cloud,
-  RefreshCw,
-  X,
-  Wallet
-} from 'lucide-react';
+import React from 'react';
+import { Cloud, RefreshCw, Wallet } from 'lucide-react';
 import { DataSource } from '../types/finance';
 import { AppTab, NAV_ITEMS } from '../constants/navigation';
 import { formatRelativeTime } from '../utils/dateUtils';
@@ -20,10 +15,9 @@ interface SidebarProps {
   lastSyncTime?: string;
   lastSyncAt?: string;
   syncError?: string | null;
-  isOpenMobile: boolean;
-  onCloseMobile: () => void;
 }
 
+/** Desktop-only navigation (lg+). Phones and tablets use BottomNav instead. */
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onSelectTab,
@@ -34,25 +28,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   lastSyncTime,
   lastSyncAt,
   syncError,
-  isOpenMobile,
-  onCloseMobile,
 }) => {
   const now = useNow();
   const syncLabel = formatRelativeTime(lastSyncAt, now) || lastSyncTime || '';
-
-  useEffect(() => {
-    if (!isOpenMobile) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseMobile();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpenMobile, onCloseMobile]);
 
   const statusMeta = {
     cloud: {
@@ -81,10 +59,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
   }[dataSource];
 
-  const content = (
+  return (
+    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 z-30 shadow-xl shadow-black/10">
     <div className="flex flex-col h-full bg-night text-slate-300 select-none">
       {/* 1. Brand Logo */}
-      <div className="px-6 pt-[max(1.75rem,calc(env(safe-area-inset-top,0px)+1.25rem))] pb-6 flex items-center justify-between border-b border-white/5">
+      <div className="px-6 pt-7 pb-6 flex items-center border-b border-white/5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-gold to-gold-deep flex items-center justify-center text-night shadow-md shadow-black/20">
             <Wallet className="w-5 h-5 stroke-[2.5]" />
@@ -99,15 +78,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <p className="text-[11px] text-slate-400 font-medium">個人財務智慧管理</p>
           </div>
         </div>
-
-        {/* Mobile close button */}
-        <button
-          onClick={onCloseMobile}
-          className="lg:hidden w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white rounded-xl hover:bg-white/10"
-          aria-label="關閉導覽選單"
-        >
-          <X className="w-5 h-5" />
-        </button>
       </div>
 
       {/* 2. Main Navigation Menu */}
@@ -119,10 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {NAV_ITEMS.map(({ tab, label, icon: Icon }) => (
           <button
             key={tab}
-            onClick={() => {
-              onSelectTab(tab);
-              onCloseMobile();
-            }}
+            onClick={() => onSelectTab(tab)}
             aria-current={activeTab === tab ? 'page' : undefined}
             className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold transition-all ${
               activeTab === tab
@@ -143,10 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* 雲端同步設定 */}
         <button
-          onClick={() => {
-            onOpenSyncModal();
-            onCloseMobile();
-          }}
+          onClick={onOpenSyncModal}
           className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
         >
           <Cloud className="w-4 h-4 text-sky-400 shrink-0" />
@@ -158,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* 3. Bottom Cloud Status Card */}
-      <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] border-t border-white/5">
+      <div className="p-4 border-t border-white/5">
         <div className="bg-night-raised rounded-2xl p-3.5 border border-white/5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -189,34 +153,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
     </div>
-  );
-
-  return (
-    <>
-      {/* Desktop Sidebar (Fixed Left) */}
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 z-30 shadow-xl shadow-black/10">
-        {content}
-      </aside>
-
-      {/* Mobile Drawer Overlay */}
-      {isOpenMobile && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          <button
-            type="button"
-            aria-label="關閉導覽選單"
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={onCloseMobile}
-          />
-          <div
-            className="relative flex-1 flex flex-col max-w-xs w-full shadow-2xl z-10 animate-slide-right"
-            role="dialog"
-            aria-modal="true"
-            aria-label="主導覽選單"
-          >
-            {content}
-          </div>
-        </div>
-      )}
-    </>
+    </aside>
   );
 };

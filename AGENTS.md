@@ -80,7 +80,7 @@ account_web/
 │   │   ├── demoData.ts        # 內建擬真 Demo 資料 (保護真實隱私)
 │   │   ├── storage.ts         # LocalStorage 讀寫與快取版本遷移 (CACHE_VERSION)
 │   │   └── __tests__/         # Vitest 回歸測試（地雷 1、2、5 都有覆蓋，TZ 固定 Asia/Taipei）
-│   ├── App.tsx                # 狀態管理：先顯示快取、背景同步 GAS（syncFromCloud）、切回前景且資料超過 5 分鐘自動同步、隱私模式
+│   ├── App.tsx                # 用到 Recharts 的元件一律 lazy 載入（首屏不含圖表庫）。狀態管理：先顯示快取、背景同步 GAS（syncFromCloud）、切回前景且資料超過 5 分鐘自動同步、隱私模式
 │   ├── main.tsx               # React 根渲染節點 + PWA Service Worker 註冊
 │   └── index.css              # 全域樣式、字體與 Fintech 自訂 Utility
 ```
@@ -139,7 +139,10 @@ account_web/
 - **預算**：來自試算表「預算設定」分頁（doGet v2 的 `budgets`），未設定的類別以半年均值比例當「參考」值（`resolveCategoryBudgets`）。
 - **首屏**：`MonthOverviewCard` 在所有寬度顯示（主數字「本月還可以花」、每天可花、預算條上的「今天應到」刻度）；最近 5 筆只在 `< sm` 顯示。
 - **類別色**：圖表填色用 `categoryColor`，小字用 `categoryTextColor`，圖示底／標籤底用 `categoryTint`（都在 `tokens.ts`）；元件內不要再建 Tailwind 類別色對照表。
-- **搜尋**：明細有關鍵字時自動跨所有月份（忽略月份篩選），列上會顯示年份。
+- **搜尋**：明細有關鍵字時自動跨所有月份（忽略月份篩選）；清單跨多個月份時列上會顯示年份。
+- **用語**：和預算比較一律叫「預算進度」（首屏、累計走勢、洞察共用），不要再出現「預算節奏」。
+- **打包**：`vite.config.ts` 不設 `manualChunks`（指名 recharts 會把 React 一起帶進去、變成首屏預載）。新增用到 Recharts 的元件請在 `App.tsx` 以 `lazy` 載入。
+- **Service Worker**（`public/sw.js`）：HTML 走 network-first；`/assets/` 下的雜湊檔 cache-first 且只保留最新 30 個；改快取策略時遞增 `CACHE_NAME`。
 - **導覽**：手機與平板用底部導覽列（`BottomNav`），桌機用側欄；新增頁面只改 `constants/navigation.ts`。月曆熱圖用 `heatScale`，深色卡片上的類別色用 `categoryColorsOnDark`。
 - **數字規範**：所有金額數值必須強制加上 **`tabular-nums`**（避免跳動對齊）與 **`tracking-tight`**。隱私模式（頂部眼睛按鈕）靠 `.privacy-mode .tabular-nums` 模糊金額，所以 `tabular-nums` 只包住金額本身、別包住整句標籤；新增金額沒加這個 class 就會在隱私模式露出。
 - **分析月份**：月份選單可選「全部月份」（`selectedMonth = ''`）。只能看單月的元件（首屏、KPI、累計走勢、預算）一律收 App 的 `focusMonth`（選定月份，否則最新月份）；明細與分類圓餅才吃 `''`。月份清單用 `buildAvailableMonths`，有資料時一定包含本月。

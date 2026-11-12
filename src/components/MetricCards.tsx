@@ -87,9 +87,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   const lastPointY = lastPoint ? SPARK_H - 2 - ((lastPoint.cumulative ?? 0) / sparkMax) * (SPARK_H - 6) : 0;
 
   // Highest single expense
-  const targetTransactions = transactions.filter(t => t.month === activeMonth);
-
-  const maxExpense = targetTransactions.reduce(
+  const maxExpense = currentMonthTransactions.reduce(
     (max, t) => (t.amount > max.amount ? t : max),
     { id: '', amount: 0, item: '無', category: '' }
   );
@@ -105,13 +103,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       : { label: '節奏穩定', tone: 'from-teal-600 via-teal-700 to-emerald-700', Icon: CheckCircle2 };
 
   const visibleSummaries = sortedSummaries.filter(s => !activeMonth || s.month <= activeMonth).slice(-6);
-  const sparkTransactions = targetTransactions.slice(0, 10);
+  const sparkTransactions = currentMonthTransactions.slice(0, 10);
 
   const formatAmount = (num: number) => Math.round(num).toLocaleString();
 
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 min-w-0">
-      {/* 1. 當月總支出 (含眼睛切換與波浪 Sparkline) */}
+      {/* 1. 當月總支出（對比上月同期 + 累計走勢 Sparkline） */}
       <div className="fintech-card p-3.5 sm:p-5 relative flex flex-col justify-between overflow-hidden group min-w-0">
         <div>
           <div className="flex items-center justify-between text-slate-500">

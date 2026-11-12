@@ -10,15 +10,18 @@ const Bar: React.FC<{ className?: string }> = ({ className = '' }) => (
  */
 export const DashboardSkeleton: React.FC = () => (
   <div className="space-y-4 sm:space-y-6 animate-pulse motion-reduce:animate-none" role="status" aria-label="正在讀取記帳資料">
-    {/* Mobile overview card */}
-    <div className="sm:hidden fintech-card p-4 space-y-4">
-      <div className="flex justify-between">
-        <div className="space-y-2"><Bar className="h-3 w-16" /><Bar className="h-8 w-32" /></div>
-        <div className="space-y-2 flex flex-col items-end"><Bar className="h-3 w-14" /><Bar className="h-6 w-24" /></div>
+    {/* Overview card: headline number + budget bar on every width, recent records on phones */}
+    <div className="fintech-card p-4 sm:p-6 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-8">
+        <div className="space-y-2 shrink-0"><Bar className="h-3 w-20" /><Bar className="h-10 w-40" /><Bar className="h-3 w-32" /></div>
+        <div className="flex-1 space-y-2.5">
+          <div className="flex justify-between"><Bar className="h-3 w-24" /><Bar className="h-3 w-24" /></div>
+          <Bar className="h-2.5 w-full rounded-full" />
+          <Bar className="h-3 w-28" />
+        </div>
       </div>
-      <Bar className="h-2.5 w-full rounded-full" />
       {[0, 1, 2].map(i => (
-        <div key={i} className="flex justify-between items-center pt-1">
+        <div key={i} className="sm:hidden flex justify-between items-center pt-1">
           <div className="space-y-1.5"><Bar className="h-3.5 w-24" /><Bar className="h-2.5 w-16" /></div>
           <Bar className="h-3.5 w-14" />
         </div>

@@ -45,3 +45,9 @@ Thumbs.db
 .clasp.json
 .gas-deploy.json
 .clasprc.json
+
+# Serena (local code-navigation tool) project cache/config
+.serena/
+
+# Claude Code local preview config
+.claude/

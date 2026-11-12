@@ -22,7 +22,9 @@
 - 📈 **本月累計支出走勢**：每日累計 vs 上月同期 vs 預算進度，標示今天位置，並從第 5 天起延伸月底推估線。
 - 📊 **月度支出趨勢**：柱狀（預設）／走勢雙視圖，進行中月份特別標示；點擊月份或類別即可連動篩選明細。
 - 🧮 **4 大指標卡**：本月支出（對比上月同期）、半年均線、最高單筆、月底推估。
-- 📱 **手機首屏「本月概況」**：本月已花、預算剩餘、每天可花多少、最近 5 筆。
+- 💰 **首屏「本月還可以花」**：剩餘預算、每天可花多少、預算條上標出今天應到的位置；手機另附最近 5 筆。
+- 🗓️ **消費月曆與月度回顧**：每日熱圖（相對自己的日均）、最大一筆、最常記項目、連續記帳天數。
+- 🙈 **隱私模式**：一鍵模糊全站金額。
 - 📅 **每月花費分析分頁**：各類別堆疊柱狀圖與月份摘要卡片。
 - 🎭 **Demo 示範模式**：未連線時顯示擬真範例資料，保護隱私。
 - 🎨 **設計 Token**：顏色集中於 `src/theme/tokens.ts`，Tailwind 與圖表共用（暖米白底、青綠主色、深色側欄 + 金色強調）。
@@ -39,22 +41,25 @@ account_web/
 │   └── sw.js                   # Network-first Service Worker
 ├── src/
 │   ├── components/
-│   │   ├── Sidebar.tsx         # 桌機側欄與手機抽屜導覽、同步狀態
+│   │   ├── Sidebar.tsx         # 桌機側欄導覽、同步狀態
+│   │   ├── BottomNav.tsx       # 手機／平板底部導覽列
+│   │   ├── CalendarPage.tsx    # 消費月曆熱圖
+│   │   ├── ReviewPage.tsx      # 月度回顧
 │   │   ├── TopGreetingBar.tsx  # 問候語、同步狀態、分析月份選擇
-│   │   ├── MonthOverviewCard.tsx  # 手機首屏本月概況
+│   │   ├── MonthOverviewCard.tsx  # 首屏：本月還可以花、每天可花、預算進度
 │   │   ├── MetricCards.tsx     # 4 大指標卡
 │   │   ├── ExpenseCharts.tsx   # 月度趨勢 + 類別甜甜圈圖（可 Drill-down）
 │   │   ├── MonthCumulativeChart.tsx # 本月累計支出走勢
-│   │   ├── BudgetProgressPanel.tsx  # 類別預算進度與週末/平日洞察
+│   │   ├── BudgetProgressPanel.tsx  # 類別預算進度與本月洞察
 │   │   ├── TransactionList.tsx # 交易明細（搜尋、排序、分頁）
 │   │   ├── MonthlyBreakdownPage.tsx # 每月花費分析頁（延遲載入）
 │   │   ├── DashboardSkeleton.tsx    # 首次載入骨架畫面
 │   │   └── SyncModal.tsx       # Google Apps Script 連線設定
-│   ├── constants/              # 五大分類、分類圖示
-│   ├── hooks/useNow.ts         # 每分鐘更新的現在時間（相對時間顯示用）
+│   ├── constants/              # 五大分類、分類圖示、導覽項目
+│   ├── hooks/                  # useNow（相對時間）、useToday（跨日自動換月）
 │   ├── theme/tokens.ts         # 顏色 Token（唯一來源）
 │   ├── types/finance.ts        # TypeScript 資料介面
-│   ├── utils/                  # GAS 連線與正規化、日期、財務計算、LocalStorage
+│   ├── utils/                  # GAS 連線與正規化、日期、財務計算、洞察、LocalStorage
 │   │   └── __tests__/          # Vitest 回歸測試
 │   ├── App.tsx                 # 狀態管理
 │   └── index.css               # 全域樣式

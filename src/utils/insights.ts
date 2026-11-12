@@ -88,7 +88,7 @@ export function buildMonthInsights(
     insights.push({
       id: 'pace',
       tone: 'good',
-      text: progress.isCurrent ? '每個類別都在預算節奏內' : '每個類別都沒有超出預算',
+      text: progress.isCurrent ? '每個類別都在預算進度內' : '每個類別都沒有超出預算',
     });
   }
 

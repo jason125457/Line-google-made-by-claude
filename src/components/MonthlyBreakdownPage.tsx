@@ -15,7 +15,7 @@ import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, X, Info } from
 import { Transaction, TransactionCategory, IrregularExpense } from '../types/finance';
 import { TransactionList } from './TransactionList';
 import { compareTransactionDates } from '../utils/dateUtils';
-import { palette, categoryColor } from '../theme/tokens';
+import { palette, categoryColor, categoryTextColor, categoryTint } from '../theme/tokens';
 import { STANDARD_CATEGORIES } from '../constants/categories';
 import { categoryIcon } from '../constants/categoryIcons';
 import {
@@ -210,7 +210,7 @@ const CategoryTrendCard: React.FC<{
     >
       <div className="flex flex-wrap items-center justify-between gap-1.5">
         <span className="flex items-center gap-1.5 text-sm font-extrabold text-ink whitespace-nowrap">
-          <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}1A`, color }}>
+          <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: categoryTint(category), color: categoryTextColor(category) }}>
             <Icon className="w-3.5 h-3.5" aria-hidden="true" />
           </span>
           {category}

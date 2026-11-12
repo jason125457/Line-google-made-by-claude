@@ -42,9 +42,10 @@ Use `categoryColor(category)` from `src/theme/tokens.ts` for chart fills and dot
 - Categories without a budget fall back to a reference split of the six-month average and are labelled 「參考」.
 - Over-budget states always carry text (「超支 120%」), never color alone.
 
-### 2.2c Mobile first screen
-On `< sm` the dashboard opens with `MonthOverviewCard`: spent this month, budget remaining
-(with daily allowance for the current month), and the five most recent records.
+### 2.2c First screen
+The dashboard opens with `MonthOverviewCard` on every width: what is left to spend this month, the daily
+allowance, and a budget bar with a tick where an even pace would be today. Phones also get the five most
+recent records. Category text and tinted chips use `categoryTextColor` / `categoryTint`.
 
 ### 2.3 Typography
 - **Primary Font**: `Plus Jakarta Sans` (Latin and digits, the only web font) → system Traditional Chinese UI font:
@@ -57,9 +58,8 @@ On `< sm` the dashboard opens with `MonthOverviewCard`: spent this month, budget
   - Labels & Eyebrows: `0.05em` (`tracking-wider`, uppercase)
 
 ### 2.4 Surface & Elevation
-- **Card Shadow**: `0 1px 3px 0 rgba(0,0,0,0.03), 0 6px 16px -4px rgba(15,23,42,0.04)`
-- **Hover Elevation**: `0 8px 24px -4px rgba(15,23,42,0.08), 0 2px 6px -1px rgba(0,0,0,0.02)`
-- **Border**: `1px solid rgba(226, 232, 240, 0.9)`
+- **Card Shadow / Hover Elevation / Border**: defined once by `.fintech-card` in `src/index.css`
+  (hairline `border-line`, two-layer soft shadow that deepens on hover).
 - **Border Radius**:
   - Metric Cards: `24px` (`rounded-3xl`)
   - Container / Charts: `24px` (`rounded-3xl`)
@@ -70,5 +70,5 @@ On `< sm` the dashboard opens with `MonthOverviewCard`: spent this month, budget
 
 ## 3. Micro-interactions
 - **Active state**: `active:scale-[0.98]` on buttons and actionable cards.
-- **Live Beacon**: Pulsing green dot with `box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2)`.
+- **Focus**: every control gets a 2px primary outline on `:focus-visible` (see `src/index.css`).
 - **Chart Tooltip**: Glassmorphism (`backdrop-blur-md bg-slate-900/90 text-white border border-white/10 rounded-2xl`).

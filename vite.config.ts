@@ -11,16 +11,9 @@ export default defineConfig({
     port: 5173,
     open: false
   },
-  build: {
-    rollupOptions: {
-      output: {
-        // Keep the heavy chart library in its own long-lived cacheable chunk
-        manualChunks: {
-          recharts: ['recharts']
-        }
-      }
-    }
-  },
+  // No manualChunks: naming recharts there also pulled React into that chunk, which made the
+  // entry preload all ~590 KB. Left alone, Rollup puts the chart code in a chunk that only the
+  // lazy-loaded chart components import (see App.tsx).
   test: {
     environment: 'node'
   }
