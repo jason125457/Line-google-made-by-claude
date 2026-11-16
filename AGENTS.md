@@ -182,3 +182,15 @@ npm run gas:deploy -- 這次改了什麼
   - **Build command**：`npm run build`
   - **Build output directory**：`dist`
 - **SPA 路由**：Cloudflare Pages 在沒有 `404.html` 時，原生預設自動將所有非靜態檔案路由回退至 `index.html`，無需且不可建立 `/* /index.html 200` 之 `_redirects`（否則會觸發 Wrangler 100324 無限迴圈報錯）。
+
+---
+
+## ✅ 7. 工作流程與驗收 (Workflow)
+
+- 本檔是唯一正本；`CLAUDE.md` 等各工具的規則檔只引用本檔，再加該工具專屬事項。目前進度、已做決定與待辦在 `docs/HANDOFF.md`，接手先讀，收工前更新。
+- 改完一定跑 `npm test` 與 `npm run build`（含 `tsc`）。畫面改動要在手機寬度與桌機寬度各看一次，並開隱私模式確認新金額有被模糊。
+- 推到 `main` 就會自動上線到正式站：未經使用者同意不推 `main`，在分支上做完交給使用者確認。
+- `npm run gas:deploy` 需要使用者電腦上的 clasp 登入，而且會更新 LINE 機器人連的線上部署：由使用者執行，或逐次取得同意。改了 `gas/Code.gs` 但還沒部署時，在 `docs/HANDOFF.md` 註明。
+- 這個 repo 是公開的：GAS 網址、完整部署 ID、scriptId、Token、LINE userId、真實帳目都不能出現在程式、文件、測試或 commit 訊息裡。範例資料只用 `demoData.ts` 那種擬真假資料。
+- commit：英文 Conventional Commits（`feat:`、`fix:`、`chore:`、`docs:`），通常不加 scope。
+- 新增或改動會踩雷的行為時，把規則補進上面對應的地雷或設計規範。
